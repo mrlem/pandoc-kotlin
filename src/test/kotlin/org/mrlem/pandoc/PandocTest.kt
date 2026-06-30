@@ -1,10 +1,10 @@
 /**
  * Tests for the Pandoc fluent API.
  */
-package com.github.sebguillemin.pandoc
+package org.mrlem.pandoc
 
-import com.github.sebguillemin.pandoc.enums.InputFormat
-import com.github.sebguillemin.pandoc.enums.OutputFormat
+import org.mrlem.pandoc.enums.InputFormat
+import org.mrlem.pandoc.enums.OutputFormat
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

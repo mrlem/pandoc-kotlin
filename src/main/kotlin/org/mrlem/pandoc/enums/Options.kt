@@ -3,7 +3,7 @@
  * 
  * These enums provide type-safe access to Pandoc's many configuration options.
  */
-package com.github.sebguillemin.pandoc.enums
+package org.mrlem.pandoc.enums
 
 /**
  * Text wrapping options for Pandoc output.

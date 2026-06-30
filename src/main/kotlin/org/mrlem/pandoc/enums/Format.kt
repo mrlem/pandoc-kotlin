@@ -4,12 +4,12 @@
  * These enums provide type-safe access to all formats supported by Pandoc.
  * See [Pandoc manual](https://pandoc.org/MANUAL.html) for format details.
  */
-package com.github.sebguillemin.pandoc.enums
+package org.mrlem.pandoc.enums
 
 /**
  * Input formats supported by Pandoc.
  * 
- * Use these values with [com.github.sebguillemin.pandoc.PandocCommand.from] to specify
+ * Use these values with [org.mrlem.pandoc.PandocCommand.from] to specify
  * the format of your input document.
  */
 enum class InputFormat(val value: String) {
@@ -70,7 +70,7 @@ enum class InputFormat(val value: String) {
 /**
  * Output formats supported by Pandoc.
  * 
- * Use these values with [com.github.sebguillemin.pandoc.PandocCommand.to] to specify
+ * Use these values with [org.mrlem.pandoc.PandocCommand.to] to specify
  * the desired output format for your document.
  */
 enum class OutputFormat(val value: String) {

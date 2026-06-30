@@ -1,11 +1,11 @@
 /**
  * Extension functions for convenient pandoc conversions.
  */
-package com.github.sebguillemin.pandoc.extensions
+package org.mrlem.pandoc.extensions
 
-import com.github.sebguillemin.pandoc.Pandoc
-import com.github.sebguillemin.pandoc.enums.InputFormat
-import com.github.sebguillemin.pandoc.enums.OutputFormat
+import org.mrlem.pandoc.Pandoc
+import org.mrlem.pandoc.enums.InputFormat
+import org.mrlem.pandoc.enums.OutputFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

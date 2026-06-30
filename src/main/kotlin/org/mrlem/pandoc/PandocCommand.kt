@@ -5,11 +5,11 @@
  * from Kotlin applications. The API uses a state-encoded builder pattern to ensure
  * that required fields are set before execution.
  */
-package com.github.sebguillemin.pandoc
+package org.mrlem.pandoc
 
-import com.github.sebguillemin.pandoc.enums.*
-import com.github.sebguillemin.pandoc.exceptions.PandocExecutionException
-import com.github.sebguillemin.pandoc.exceptions.PandocNotFoundException
+import org.mrlem.pandoc.enums.*
+import org.mrlem.pandoc.exceptions.PandocExecutionException
+import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

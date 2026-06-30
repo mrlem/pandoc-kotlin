@@ -23,9 +23,9 @@ implementation("com.github.sebguillemin:pandoc-kt:0.1.0-SNAPSHOT")
 ### Simple Conversion
 
 ```kotlin
-import com.github.sebguillemin.pandoc.Pandoc
-import com.github.sebguillemin.pandoc.enums.InputFormat
-import com.github.sebguillemin.pandoc.enums.OutputFormat
+import org.mrlem.pandoc.Pandoc
+import org.mrlem.pandoc.enums.InputFormat
+import org.mrlem.pandoc.enums.OutputFormat
 
 val html = Pandoc.convert()
     .from(InputFormat.MARKDOWN)
@@ -144,7 +144,7 @@ Pandoc.convert().fromStdin().execute("content")  // Compile error
 ## Error Handling
 
 ```kotlin
-import com.github.sebguillemin.pandoc.exceptions.*
+import org.mrlem.pandoc.exceptions.*
 
 try {
     val html = Pandoc.convert()

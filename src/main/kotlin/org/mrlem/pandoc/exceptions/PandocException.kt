@@ -1,7 +1,7 @@
 /**
  * Exception classes for Pandoc execution errors.
  */
-package com.github.sebguillemin.pandoc.exceptions
+package org.mrlem.pandoc.exceptions
 
 /**
  * Base exception for all Pandoc-related errors.
