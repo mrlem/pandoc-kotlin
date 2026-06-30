@@ -19,6 +19,9 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        freeCompilerArgs.addAll(listOf("-Xconsistent-data-class-copy-visibility"))
+    }
 }
 
 tasks.test {
