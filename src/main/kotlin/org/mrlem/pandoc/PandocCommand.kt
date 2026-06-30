@@ -94,6 +94,22 @@ sealed class PandocCommand {
         fun input(file: File): HasInput = HasInput(listOf(file.absolutePath))
         
         /**
+         * Set multiple input files using File.
+         * 
+         * @param files The input files
+         * @return A [HasInput] state ready to set output format
+         */
+        fun input(vararg files: File): HasInput = HasInput(files.map { it.absolutePath })
+        
+        /**
+         * Set multiple input files using Path.
+         * 
+         * @param files The input file paths
+         * @return A [HasInput] state ready to set output format
+         */
+        fun input(vararg files: Path): HasInput = HasInput(files.map { it.toString() })
+        
+        /**
          * Specify that input will come from stdin.
          * 
          * @return A [NeedsTo] state ready to set output format
@@ -324,6 +340,28 @@ sealed class PandocCommand {
             files = listOf(file.absolutePath),
             to = to
         )
+        
+        /**
+         * Set multiple input files using File.
+         * 
+         * @param files The input files
+         * @return A [HasInputAndTo] state ready for execution or further configuration
+         */
+        fun input(vararg files: File): HasInputAndTo = HasInputAndTo(
+            files = files.map { it.absolutePath },
+            to = to
+        )
+        
+        /**
+         * Set multiple input files using Path.
+         * 
+         * @param files The input file paths
+         * @return A [HasInputAndTo] state ready for execution or further configuration
+         */
+        fun input(vararg files: Path): HasInputAndTo = HasInputAndTo(
+            files = files.map { it.toString() },
+            to = to
+        )
     }
     
     // ========================================================================
@@ -444,6 +482,8 @@ sealed class PandocCommand {
         fun input(file: String): HasFromAndTo = copy(files = listOf(file))
         fun input(file: Path): HasFromAndTo = copy(files = listOf(file.toString()))
         fun input(file: File): HasFromAndTo = copy(files = listOf(file.absolutePath))
+        fun input(vararg files: File): HasFromAndTo = copy(files = files.map { it.absolutePath })
+        fun input(vararg files: Path): HasFromAndTo = copy(files = files.map { it.toString() })
         fun standalone(enabled: Boolean = true): HasFromAndTo = copy(standalone = enabled)
         fun template(file: String): HasFromAndTo = copy(template = file)
         fun output(file: String): HasFromAndTo = copy(output = file)
