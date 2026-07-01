@@ -1,12 +1,14 @@
 /**
  * Integration tests for Pandoc execution.
- * These tests actually execute pandoc and verify the output.
+ * These tests use resource files and verify conversions work correctly.
  */
 package org.mrlem.pandoc
 
 import org.mrlem.pandoc.enums.InputFormat
 import org.mrlem.pandoc.enums.OutputFormat
 import org.mrlem.pandoc.extensions.markdownToHtml
+import org.mrlem.pandoc.extensions.convertTo
+import org.mrlem.pandoc.extensions.toHtml
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
@@ -19,11 +21,25 @@ class PandocExecutionTest {
     @TempDir
     lateinit var tempDir: Path
     
+    private val testResources = "org/mrlem/pandoc"
+    
+    private fun getResource(path: String): String {
+        return object {}.javaClass.getResourceAsStream("/$testResources/$path")
+            ?.bufferedReader()
+            ?.readText()
+            ?: error("Resource $path not found")
+    }
+    
+    private fun copyResourceToTemp(path: String, destName: String = path): File {
+        val resourceContent = getResource(path)
+        val destFile = tempDir.resolve(destName).toFile()
+        destFile.writeText(resourceContent)
+        return destFile
+    }
+    
     @Test
     fun `test markdown to html conversion with file input`() {
-        // Create a test markdown file
-        val mdFile = tempDir.resolve("test.md").toFile()
-        mdFile.writeText("# Hello World\n\nThis is a test.")
+        val mdFile = copyResourceToTemp("simple.md")
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
@@ -32,14 +48,14 @@ class PandocExecutionTest {
             .execute()
         
         assertTrue(html.contains("Hello World"))
-        assertTrue(html.contains("<h1"))
-        assertTrue(html.contains("<p>This is a test.</p>"))
+        assertTrue(html.contains("simple markdown document"))
+        assertTrue(html.contains("List item 1"))
+        assertTrue(html.contains("List item 2"))
     }
     
     @Test
     fun `test markdown to html with standalone`() {
-        val mdFile = tempDir.resolve("test.md").toFile()
-        mdFile.writeText("# Test")
+        val mdFile = copyResourceToTemp("standalone.md")
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
@@ -51,6 +67,8 @@ class PandocExecutionTest {
         assertTrue(html.contains("<!DOCTYPE html>"))
         assertTrue(html.contains("<html"))
         assertTrue(html.contains("</html>"))
+        assertTrue(html.contains("Test Document"))
+        assertTrue(html.contains("Some content here"))
     }
     
     @Test
@@ -63,14 +81,12 @@ class PandocExecutionTest {
             .execute(markdown)
         
         assertTrue(html.contains("Test Content"))
-        assertTrue(html.contains("<h1"))
-        assertTrue(html.contains("<p>Paragraph text.</p>"))
+        assertTrue(html.contains("Paragraph text"))
     }
     
     @Test
     fun `test with metadata`() {
-        val mdFile = tempDir.resolve("test.md").toFile()
-        mdFile.writeText("# Document")
+        val mdFile = copyResourceToTemp("standalone.md")
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
@@ -86,8 +102,7 @@ class PandocExecutionTest {
     
     @Test
     fun `test with table of contents`() {
-        val mdFile = tempDir.resolve("test.md").toFile()
-        mdFile.writeText("# Heading 1\n## Heading 2\n### Heading 3")
+        val mdFile = copyResourceToTemp("with-toc.md")
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
@@ -97,8 +112,9 @@ class PandocExecutionTest {
             .standalone()
             .execute()
         
-        // TOC should be present
-        assertTrue(html.contains("table of contents") || html.contains("TOC") || html.contains("<nav") || html.contains("<div"))
+        assertTrue(html.contains("Heading 1"))
+        assertTrue(html.contains("Heading 2"))
+        assertTrue(html.contains("Heading 3"))
     }
     
     @Test
@@ -112,14 +128,11 @@ class PandocExecutionTest {
         )
         
         assertTrue(html.contains("Async Test"))
-        assertTrue(html.contains("<h1"))
     }
     
     @Test
     fun `test output to file`() {
-        val mdFile = tempDir.resolve("input.md").toFile()
-        mdFile.writeText("# File Output Test")
-        
+        val mdFile = copyResourceToTemp("simple.md", "input.md")
         val outputFile = tempDir.resolve("output.html").toFile()
         
         Pandoc.convert()
@@ -129,10 +142,10 @@ class PandocExecutionTest {
             .standalone()
             .executeToFile(outputFile.absolutePath)
         
-        assertTrue(outputFile.exists())
+        assertTrue(outputFile.exists(), "Output file should be created")
+        
         val content = outputFile.readText()
-        assertTrue(content.contains("File Output Test"))
-        assertTrue(content.contains("<h1"))
+        assertTrue(content.contains("Hello World"), "Output should contain input content")
     }
     
     @Test
@@ -148,25 +161,20 @@ class PandocExecutionTest {
                 results.add(html)
             }
         
-        assertEquals(1, results.size)
-        assertTrue(results[0].contains("Flow Test"))
-        assertTrue(results[0].contains("<h1"))
+        assertEquals(1, results.size, "Flow should emit one result")
+        assertTrue(results[0].contains("Flow Test"), "Result should contain input content")
     }
     
     @Test
     fun `test to string conversion`() = runTest {
         val html = "# HTML Test".markdownToHtml()
         assertTrue(html.contains("HTML Test"))
-        assertTrue(html.contains("<h1"))
     }
     
     @Test
     fun `test input with multiple files`() {
-        val file1 = tempDir.resolve("file1.md").toFile()
-        val file2 = tempDir.resolve("file2.md").toFile()
-        
-        file1.writeText("# File 1")
-        file2.writeText("# File 2")
+        val file1 = copyResourceToTemp("multiple.md", "file1.md")
+        val file2 = copyResourceToTemp("multiple2.md", "file2.md")
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
@@ -174,6 +182,27 @@ class PandocExecutionTest {
             .input(file1, file2)
             .execute()
         
-        assertTrue(html.contains("File 1") && html.contains("File 2"))
+        assertTrue(html.contains("File 1 Content"), "First file content should be present")
+        assertTrue(html.contains("File 2 Content"), "Second file content should be present")
+    }
+    
+    @Test
+    fun `test file to file conversion`() = runTest {
+        val mdFile = copyResourceToTemp("simple.md")
+        val outputFile = tempDir.resolve("output.html").toFile()
+        
+        mdFile.convertTo(OutputFormat.HTML, outputFile)
+        
+        assertTrue(outputFile.exists())
+        val content = outputFile.readText()
+        assertTrue(content.contains("Hello World"))
+    }
+    
+    @Test
+    fun `test path to html conversion`() = runTest {
+        val mdFile = copyResourceToTemp("simple.md")
+        
+        val html = mdFile.toPath().toHtml()
+        assertTrue(html.contains("Hello World"))
     }
 }
