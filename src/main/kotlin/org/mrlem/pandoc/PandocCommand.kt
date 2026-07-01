@@ -151,12 +151,11 @@ sealed class PandocCommand {
          * Set the output format.
          * 
          * @param format The output format
-         * @return A [HasFromAndTo] state ready for execution or further configuration
+         * @return A [NeedsInputSource] state - needs input source (files or stdin)
          */
-        fun to(format: OutputFormat): HasFromAndTo = HasFromAndTo(
+        fun to(format: OutputFormat): NeedsInputSource = NeedsInputSource(
             from = from,
             to = format,
-            files = emptyList(),
             standalone = standalone,
             template = template,
             metadata = metadata,
@@ -383,6 +382,108 @@ sealed class PandocCommand {
          */
         fun to(format: OutputFormat): HasStdinAndTo = HasStdinAndTo(
             to = format
+        )
+    }
+    
+    // ========================================================================
+    // NEEDS INPUT SOURCE
+    // ========================================================================
+    
+    /**
+     * State where input format and output format are set but input source is not yet set.
+     * 
+     * This state requires either input files or stdin to be specified before execution.
+     * Only complete states ([HasFromAndTo], [HasInputAndTo], [HasStdinAndTo]) have
+     * terminal operations like [execute].
+     */
+    @PandocDsl
+    
+    data class NeedsInputSource internal constructor(
+        val from: InputFormat,
+        val to: OutputFormat,
+        val standalone: Boolean? = null,
+        val template: String? = null,
+        val metadata: Map<String, String> = emptyMap(),
+        val variables: Map<String, String> = emptyMap(),
+        val toc: Boolean? = null,
+        val tocDepth: Int? = null,
+        val output: String? = null
+    ) : PandocCommand() {
+        
+        /**
+         * Set input files.
+         * 
+         * @param files The input file paths
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(vararg files: String): HasFromAndTo = HasFromAndTo(
+            from = from,
+            to = to,
+            files = files.toList(),
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output
+        )
+        
+        /**
+         * Set a single input file.
+         * 
+         * @param file The input file path
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(file: String): HasFromAndTo = input(*arrayOf(file))
+        
+        /**
+         * Set a single input file using Path.
+         * 
+         * @param file The input file path
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(file: Path): HasFromAndTo = input(file.toString())
+        
+        /**
+         * Set a single input file using File.
+         * 
+         * @param file The input file
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(file: File): HasFromAndTo = input(file.absolutePath)
+        
+        /**
+         * Set multiple input files using File.
+         * 
+         * @param files The input files
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(vararg files: File): HasFromAndTo = input(*files.map { it.absolutePath }.toTypedArray())
+        
+        /**
+         * Set multiple input files using Path.
+         * 
+         * @param files The input file paths
+         * @return A [HasFromAndTo] state ready for execution or further configuration
+         */
+        fun input(vararg files: Path): HasFromAndTo = input(*files.map { it.toString() }.toTypedArray())
+        
+        /**
+         * Specify that input will come from stdin.
+         * 
+         * @return A [HasStdinAndTo] state ready for execution or further configuration
+         */
+        fun fromStdin(): HasStdinAndTo = HasStdinAndTo(
+            from = from,
+            to = to,
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output
         )
     }
     

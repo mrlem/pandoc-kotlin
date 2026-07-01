@@ -40,10 +40,20 @@ class PandocTest {
     }
     
     @Test
+    fun `compile-time safety - NeedsInputSource state does not have execute`() {
+        val command = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .to(OutputFormat.HTML)
+        // The following would not compile: command.execute()
+        // Must specify input first: command.input("file.md").execute()
+    }
+    
+    @Test
     fun `HasFromAndTo state has execute`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .to(OutputFormat.HTML)
+            .input("test.md")
         // This compiles - HasFromAndTo has execute()
     }
     
@@ -80,6 +90,7 @@ class PandocTest {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .to(OutputFormat.HTML)
+            .input("test.md")
         // executeAsync() exists on complete states
     }
     
@@ -88,6 +99,7 @@ class PandocTest {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .to(OutputFormat.HTML)
+            .input("test.md")
         // flow() exists on complete states
     }
     
