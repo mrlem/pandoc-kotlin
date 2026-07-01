@@ -1,18 +1,19 @@
-/**
+/*
  * Integration tests for Pandoc execution.
  * These tests use resource files and verify conversions work correctly.
  */
 package org.mrlem.pandoc
 
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.mrlem.pandoc.enums.InputFormat
 import org.mrlem.pandoc.enums.OutputFormat
-import org.mrlem.pandoc.extensions.markdownToHtml
 import org.mrlem.pandoc.extensions.convertTo
+import org.mrlem.pandoc.extensions.markdownToHtml
 import org.mrlem.pandoc.extensions.toHtml
-import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.file.Path
 
@@ -21,10 +22,8 @@ class PandocExecutionTest {
     @TempDir
     lateinit var tempDir: Path
     
-    private val testResources = "org/mrlem/pandoc"
-    
     private fun getResource(path: String): String {
-        return object {}.javaClass.getResourceAsStream("/$testResources/$path")
+        return object {}.javaClass.getResourceAsStream("/$path")
             ?.bufferedReader()
             ?.readText()
             ?: error("Resource $path not found")
