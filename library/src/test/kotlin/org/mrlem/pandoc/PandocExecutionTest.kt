@@ -13,6 +13,7 @@ import org.mrlem.pandoc.enums.OutputFormat
 import org.mrlem.pandoc.extensions.convertTo
 import org.mrlem.pandoc.extensions.markdownToHtml
 import org.mrlem.pandoc.extensions.toHtml
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Path
 
@@ -127,6 +128,20 @@ class PandocExecutionTest {
             .executeAsync()
         
         assertTrue(html.contains("Async Test"))
+    }
+    
+    @Test
+    fun `test inputStream conversion`() = runTest {
+        val markdown = "# Stream Test"
+        val stream = ByteArrayInputStream(markdown.toByteArray())
+        
+        val html = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputStream(stream)
+            .to(OutputFormat.HTML)
+            .executeAsync()
+        
+        assertTrue(html.contains("Stream Test"))
     }
     
     @Test

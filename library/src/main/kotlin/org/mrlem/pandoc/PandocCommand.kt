@@ -22,6 +22,7 @@ import org.mrlem.pandoc.enums.WrapOption
 import org.mrlem.pandoc.exceptions.PandocExecutionException
 import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import java.io.File
+import java.io.InputStream
 import java.nio.file.Path
 
 /**
@@ -38,6 +39,8 @@ sealed class InputSource {
     data class Files(val files: List<String>) : InputSource()
     /** Input from a string (passed via stdin). */
     data class StringInput(val content: String) : InputSource()
+    /** Input from an InputStream (passed via stdin). */
+    data class StreamInput(val stream: InputStream) : InputSource()
 }
 
 /**
@@ -245,6 +248,84 @@ sealed class PandocCommand {
         fun inputFile(file: File): NeedsTo = inputFile(file.absolutePath)
         fun inputFiles(vararg files: File): NeedsTo = inputFiles(*files.map { it.absolutePath }.toTypedArray())
         fun inputFiles(vararg files: Path): NeedsTo = inputFiles(*files.map { it.toString() }.toTypedArray())
+        
+        fun inputStream(stream: InputStream): NeedsTo = NeedsTo(
+            from = from,
+            inputSource = InputSource.StreamInput(stream),
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output,
+            wrap = wrap,
+            ascii = ascii,
+            numberSections = numberSections,
+            numberOffset = numberOffset,
+            topLevelDivision = topLevelDivision,
+            extractMedia = extractMedia,
+            resourcePath = resourcePath,
+            includeInHeader = includeInHeader,
+            includeBeforeBody = includeBeforeBody,
+            includeAfterBody = includeAfterBody,
+            highlightStyle = highlightStyle,
+            syntaxDefinition = syntaxDefinition,
+            dpi = dpi,
+            eol = eol,
+            columns = columns,
+            preserveTabs = preserveTabs,
+            tabStop = tabStop,
+            pdfEngine = pdfEngine,
+            pdfEngineOpt = pdfEngineOpt,
+            selfContained = selfContained,
+            embedResources = embedResources,
+            linkImages = linkImages,
+            requestHeaders = requestHeaders,
+            noCheckCertificate = noCheckCertificate,
+            abbreviations = abbreviations,
+            indentedCodeClasses = indentedCodeClasses,
+            defaultImageExtension = defaultImageExtension,
+            filters = filters,
+            luaFilters = luaFilters,
+            shiftHeadingLevelBy = shiftHeadingLevelBy,
+            baseHeaderLevel = baseHeaderLevel,
+            trackChanges = trackChanges,
+            stripComments = stripComments,
+            referenceLinks = referenceLinks,
+            referenceLocation = referenceLocation,
+            figureCaptionPosition = figureCaptionPosition,
+            tableCaptionPosition = tableCaptionPosition,
+            markdownHeadings = markdownHeadings,
+            listTables = listTables,
+            listings = listings,
+            incremental = incremental,
+            slideLevel = slideLevel,
+            sectionDivs = sectionDivs,
+            htmlQTags = htmlQTags,
+            emailObfuscation = emailObfuscation,
+            idPrefix = idPrefix,
+            titlePrefix = titlePrefix,
+            css = css,
+            citeproc = citeproc,
+            bibliography = bibliography,
+            csl = csl,
+            citationAbbreviations = citationAbbreviations,
+            natbib = natbib,
+            biblatex = biblatex,
+            mathml = mathml,
+            webtex = webtex,
+            mathjax = mathjax,
+            katex = katex,
+            gladtex = gladtex,
+            trace = trace,
+            dumpArgs = dumpArgs,
+            ignoreArgs = ignoreArgs,
+            verbose = verbose,
+            quiet = quiet,
+            failIfWarnings = failIfWarnings,
+            log = log
+        )
         
         fun inputString(content: String): NeedsTo = NeedsTo(
             from = from,
@@ -909,6 +990,7 @@ sealed class PandocCommand {
             when (inputSource) {
                 is InputSource.Files -> args.addAll(inputSource.files)
                 is InputSource.StringInput -> args.add("-")
+                is InputSource.StreamInput -> args.add("-")
             }
             
             return args
@@ -920,10 +1002,22 @@ sealed class PandocCommand {
                     .redirectErrorStream(false)
                     .start()
                 
-                if (inputSource is InputSource.StringInput) {
-                    process.outputStream.bufferedWriter().use { writer ->
-                        writer.write(inputSource.content)
-                        writer.flush()
+                when (inputSource) {
+                    is InputSource.StringInput -> {
+                        process.outputStream.bufferedWriter().use { writer ->
+                            writer.write(inputSource.content)
+                            writer.flush()
+                        }
+                    }
+                    is InputSource.StreamInput -> {
+                        process.outputStream.use { output ->
+                            inputSource.stream.use { input ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }
+                    is InputSource.Files -> {
+                        // Files are passed as arguments, no stdin needed
                     }
                 }
                 
@@ -970,11 +1064,18 @@ sealed class PandocCommand {
  *     .to(OutputFormat.HTML)
  *     .execute()
  * 
+ * // Conversion from InputStream
+ * val html3 = Pandoc.convert()
+ *     .from(InputFormat.MARKDOWN)
+ *     .inputStream(inputStream)
+ *     .to(OutputFormat.HTML)
+ *     .execute()
+ * 
  * // Async conversion
  * suspend fun convertAsync() {
  *     val result = Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
- *         .input("input.md")
+ *         .inputFile("input.md")
  *         .to(OutputFormat.HTML)
  *         .executeAsync()
  * }
