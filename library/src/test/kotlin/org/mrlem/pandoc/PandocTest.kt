@@ -28,57 +28,53 @@ class PandocTest {
     }
     
     @Test
-    fun `compile-time safety - NeedsInput state does not have execute`() {
-        val command = Pandoc.convert().to(OutputFormat.HTML)
-        // The following would not compile: command.execute()
-    }
-    
-    @Test
     fun `compile-time safety - NeedsTo state does not have execute`() {
-        val command = Pandoc.convert().fromStdin()
-        // The following would not compile: command.execute("content")
-    }
-    
-    @Test
-    fun `compile-time safety - NeedsInputSource state does not have execute`() {
-        val command = Pandoc.convert()
-            .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
+        val command = Pandoc.convert().from(InputFormat.MARKDOWN).input("test.md")
         // The following would not compile: command.execute()
-        // Must specify input first: command.input("file.md").execute()
     }
     
     @Test
-    fun `HasFromAndTo state has execute`() {
+    fun `compile-time safety - NeedsTo state with inputString does not have execute`() {
+        val command = Pandoc.convert().from(InputFormat.MARKDOWN).inputString("# Hello")
+        // The following would not compile: command.execute()
+    }
+    
+    @Test
+    fun `Complete state with file input has execute`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
-            .input("test.md")
-        // This compiles - HasFromAndTo has execute()
-    }
-    
-    @Test
-    fun `HasInputAndTo state has execute`() {
-        val command = Pandoc.convert()
             .input("test.md")
             .to(OutputFormat.HTML)
-        // This compiles - HasInputAndTo has execute()
+        // This compiles - Complete has execute()
     }
     
     @Test
-    fun `HasStdinAndTo state has execute with content`() {
-        val command = Pandoc.convert()
-            .fromStdin()
-            .to(OutputFormat.HTML)
-        // This compiles - HasStdinAndTo has execute(content)
-    }
-    
-    @Test
-    fun `full conversion chain compiles`() {
+    fun `Complete state with string input has execute`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
+            .inputString("# Hello")
             .to(OutputFormat.HTML)
+        // This compiles - Complete has execute()
+    }
+    
+    @Test
+    fun `full conversion chain with file input compiles`() {
+        val command = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
             .input("test.md")
+            .to(OutputFormat.HTML)
+            .standalone()
+            .toc(2)
+            .metadata("title", "Test Document")
+        // All methods exist and chain together
+    }
+    
+    @Test
+    fun `full conversion chain with string input compiles`() {
+        val command = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputString("# Test")
+            .to(OutputFormat.HTML)
             .standalone()
             .toc(2)
             .metadata("title", "Test Document")
@@ -89,13 +85,8 @@ class PandocTest {
     fun `async execution methods exist`() = runTest {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input("test.md")
+            .to(OutputFormat.HTML)
         // executeAsync() exists on complete states
-    }
-    
-    @Test
-    fun `convertString convenience function exists`() = runTest {
-        // convertString() convenience function exists
     }
 }

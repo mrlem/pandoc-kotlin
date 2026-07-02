@@ -22,21 +22,26 @@ import java.nio.file.Path
 annotation class PandocDsl
 
 /**
+ * Represents the input source for pandoc conversion.
+ */
+sealed class InputSource {
+    /** Input from one or more files. */
+    data class Files(val files: List<String>) : InputSource()
+    /** Input from a string (passed via stdin). */
+    data class StringInput(val content: String) : InputSource()
+}
+
+/**
  * Sealed hierarchy for Pandoc command building with compile-time safety.
  * 
- * Each subclass represents a different state of configuration:
+ * Simplified state machine with enforced order: from() -> input() or inputString() -> to()
+ *
  * - [Incomplete]: No required fields set yet
- * - [HasFrom]: Input format set, needs output format
- * - [HasInput]: Input files set, needs output format
- * - [NeedsInput]: Output format set, needs input
- * - [NeedsInputSource]: Input and output formats set, needs input source (files or stdin)
- * - [NeedsTo]: Input method set (stdin), needs output format
- * - [HasFromAndTo]: Complete - has input format, output format, and input files
- * - [HasInputAndTo]: Complete - has input files and output format
- * - [HasStdinAndTo]: Complete - has stdin input and output format
+ * - [HasFrom]: Input format set, needs input source
+ * - [NeedsTo]: Input format and source set, needs output format
+ * - [Complete]: All required fields set, ready for execution
  * 
- * Only complete states (HasFromAndTo, HasInputAndTo, HasStdinAndTo) have
- * terminal operations like [execute] and [executeAsync].
+ * Only the [Complete] state has terminal operations like [execute] and [executeAsync].
  */
 sealed class PandocCommand {
     
@@ -47,7 +52,7 @@ sealed class PandocCommand {
     /**
      * Initial state with no required fields set.
      * 
-     * Use [from], [input], or [fromStdin] to begin configuration.
+     * Use [from] to begin configuration.
      */
     @PandocDsl
     class Incomplete internal constructor() : PandocCommand() {
@@ -56,74 +61,9 @@ sealed class PandocCommand {
          * Set the input format.
          * 
          * @param format The input format (e.g., MARKDOWN, HTML, DOCX)
-         * @return A [HasFrom] state ready to set output format
+         * @return A [HasFrom] state ready to set input source
          */
         fun from(format: InputFormat): HasFrom = HasFrom(format)
-        
-        /**
-         * Set input files.
-         * 
-         * @param files The input file paths
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(vararg files: String): HasInput = HasInput(files.toList())
-        
-        /**
-         * Set a single input file.
-         * 
-         * @param file The input file path
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(file: String): HasInput = HasInput(listOf(file))
-        
-        /**
-         * Set a single input file using Path.
-         * 
-         * @param file The input file path
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(file: Path): HasInput = HasInput(listOf(file.toString()))
-        
-        /**
-         * Set a single input file using File.
-         * 
-         * @param file The input file
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(file: File): HasInput = HasInput(listOf(file.absolutePath))
-        
-        /**
-         * Set multiple input files using File.
-         * 
-         * @param files The input files
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(vararg files: File): HasInput = HasInput(files.map { it.absolutePath })
-        
-        /**
-         * Set multiple input files using Path.
-         * 
-         * @param files The input file paths
-         * @return A [HasInput] state ready to set output format
-         */
-        fun input(vararg files: Path): HasInput = HasInput(files.map { it.toString() })
-        
-        /**
-         * Specify that input will come from stdin.
-         * 
-         * @return A [NeedsTo] state ready to set output format
-         */
-        fun fromStdin(): NeedsTo = NeedsTo(inputFromStdin = true)
-        
-        /**
-         * Set the output format first.
-         * 
-         * This is useful when you want to specify output format before input.
-         * 
-         * @param format The output format
-         * @return A [NeedsInput] state ready to set input
-         */
-        fun to(format: OutputFormat): NeedsInput = NeedsInput(format)
     }
     
     // ========================================================================
@@ -131,376 +71,11 @@ sealed class PandocCommand {
     // ========================================================================
     
     /**
-     * State where input format is set but output format is not yet set.
+     * State where input format is set but input source and output format are not yet set.
      */
     @PandocDsl
-    
     data class HasFrom internal constructor(
         val from: InputFormat,
-        val standalone: Boolean? = null,
-        val template: String? = null,
-        val metadata: Map<String, String> = emptyMap(),
-        val variables: Map<String, String> = emptyMap(),
-        val toc: Boolean? = null,
-        val tocDepth: Int? = null,
-        val output: String? = null
-    ) : PandocCommand() {
-        
-        /**
-         * Set the output format.
-         * 
-         * @param format The output format
-         * @return A [NeedsInputSource] state - needs input source (files or stdin)
-         */
-        fun to(format: OutputFormat): NeedsInputSource = NeedsInputSource(
-            from = from,
-            to = format,
-            standalone = standalone,
-            template = template,
-            metadata = metadata,
-            variables = variables,
-            toc = toc,
-            tocDepth = tocDepth,
-            output = output
-        )
-        
-        // Configuration options that can be set with from
-        
-        /**
-         * Create a standalone document with header and footer.
-         * 
-         * @param enabled Whether to create a standalone document (default: true)
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun standalone(enabled: Boolean = true): HasFrom = copy(standalone = enabled)
-        
-        /**
-         * Use a custom template file.
-         * 
-         * @param file The template file path
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun template(file: String): HasFrom = copy(template = file)
-        
-        /**
-         * Set metadata for the document.
-         * 
-         * @param key The metadata key
-         * @param value The metadata value
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun metadata(key: String, value: String): HasFrom = copy(
-            metadata = metadata + (key to value)
-        )
-        
-        /**
-         * Set variables for the template.
-         * 
-         * @param key The variable key
-         * @param value The variable value
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun variable(key: String, value: String): HasFrom = copy(
-            variables = variables + (key to value)
-        )
-        
-        /**
-         * Enable table of contents.
-         * 
-         * @param depth The depth of headings to include (default: null = auto)
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun toc(depth: Int? = null): HasFrom = copy(toc = true, tocDepth = depth)
-        
-        /**
-         * Set the output file.
-         * 
-         * @param file The output file path
-         * @return A new [HasFrom] with updated configuration
-         */
-        fun output(file: String): HasFrom = copy(output = file)
-    }
-    
-    // ========================================================================
-    // HAS INPUT FILES
-    // ========================================================================
-    
-    /**
-     * State where input files are set but output format is not yet set.
-     */
-    @PandocDsl
-    
-    data class HasInput internal constructor(
-        val files: List<String>,
-        val standalone: Boolean? = null,
-        val template: String? = null,
-        val metadata: Map<String, String> = emptyMap(),
-        val variables: Map<String, String> = emptyMap(),
-        val toc: Boolean? = null,
-        val tocDepth: Int? = null,
-        val output: String? = null
-    ) : PandocCommand() {
-        
-        /**
-         * Set the output format.
-         * 
-         * @param format The output format
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun to(format: OutputFormat): HasInputAndTo = HasInputAndTo(
-            files = files,
-            to = format,
-            standalone = standalone,
-            template = template,
-            metadata = metadata,
-            variables = variables,
-            toc = toc,
-            tocDepth = tocDepth,
-            output = output
-        )
-        
-        // Configuration options that can be set with input files
-        
-        fun standalone(enabled: Boolean = true): HasInput = copy(standalone = enabled)
-        fun template(file: String): HasInput = copy(template = file)
-        fun metadata(key: String, value: String): HasInput = copy(
-            metadata = metadata + (key to value)
-        )
-        fun variable(key: String, value: String): HasInput = copy(
-            variables = variables + (key to value)
-        )
-        fun toc(depth: Int? = null): HasInput = copy(toc = true, tocDepth = depth)
-        fun output(file: String): HasInput = copy(output = file)
-    }
-    
-    // ========================================================================
-    // NEEDS INPUT
-    // ========================================================================
-    
-    /**
-     * State where output format is set but input is not yet set.
-     */
-    @PandocDsl
-    
-    data class NeedsInput internal constructor(val to: OutputFormat) : PandocCommand() {
-        
-        /**
-         * Set the input format.
-         * 
-         * @param format The input format
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun from(format: InputFormat): HasFromAndTo = HasFromAndTo(
-            from = format,
-            to = to
-        )
-        
-        /**
-         * Set input files.
-         * 
-         * @param files The input file paths
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: String): HasInputAndTo = HasInputAndTo(
-            files = files.toList(),
-            to = to
-        )
-        
-        /**
-         * Set a single input file.
-         * 
-         * @param file The input file path
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(file: String): HasInputAndTo = HasInputAndTo(
-            files = listOf(file),
-            to = to
-        )
-        
-        /**
-         * Set a single input file using Path.
-         * 
-         * @param file The input file path
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(file: Path): HasInputAndTo = HasInputAndTo(
-            files = listOf(file.toString()),
-            to = to
-        )
-        
-        /**
-         * Set a single input file using File.
-         * 
-         * @param file The input file
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(file: File): HasInputAndTo = HasInputAndTo(
-            files = listOf(file.absolutePath),
-            to = to
-        )
-        
-        /**
-         * Set multiple input files using File.
-         * 
-         * @param files The input files
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: File): HasInputAndTo = HasInputAndTo(
-            files = files.map { it.absolutePath },
-            to = to
-        )
-        
-        /**
-         * Set multiple input files using Path.
-         * 
-         * @param files The input file paths
-         * @return A [HasInputAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: Path): HasInputAndTo = HasInputAndTo(
-            files = files.map { it.toString() },
-            to = to
-        )
-    }
-    
-    // ========================================================================
-    // NEEDS TO (STDIN)
-    // ========================================================================
-    
-    /**
-     * State where input is from stdin but output format is not yet set.
-     */
-    @PandocDsl
-    
-    data class NeedsTo internal constructor(val inputFromStdin: Boolean = true) : PandocCommand() {
-        
-        /**
-         * Set the output format.
-         * 
-         * @param format The output format
-         * @return A [HasStdinAndTo] state ready for execution or further configuration
-         */
-        fun to(format: OutputFormat): HasStdinAndTo = HasStdinAndTo(
-            to = format
-        )
-    }
-    
-    // ========================================================================
-    // NEEDS INPUT SOURCE
-    // ========================================================================
-    
-    /**
-     * State where input format and output format are set but input source is not yet set.
-     * 
-     * This state requires either input files or stdin to be specified before execution.
-     * Only complete states ([HasFromAndTo], [HasInputAndTo], [HasStdinAndTo]) have
-     * terminal operations like [execute].
-     */
-    @PandocDsl
-    
-    data class NeedsInputSource internal constructor(
-        val from: InputFormat,
-        val to: OutputFormat,
-        val standalone: Boolean? = null,
-        val template: String? = null,
-        val metadata: Map<String, String> = emptyMap(),
-        val variables: Map<String, String> = emptyMap(),
-        val toc: Boolean? = null,
-        val tocDepth: Int? = null,
-        val output: String? = null
-    ) : PandocCommand() {
-        
-        /**
-         * Set input files.
-         * 
-         * @param files The input file paths
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: String): HasFromAndTo = HasFromAndTo(
-            from = from,
-            to = to,
-            files = files.toList(),
-            standalone = standalone,
-            template = template,
-            metadata = metadata,
-            variables = variables,
-            toc = toc,
-            tocDepth = tocDepth,
-            output = output
-        )
-        
-        /**
-         * Set a single input file.
-         * 
-         * @param file The input file path
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(file: String): HasFromAndTo = input(*arrayOf(file))
-        
-        /**
-         * Set a single input file using Path.
-         * 
-         * @param file The input file path
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(file: Path): HasFromAndTo = input(file.toString())
-        
-        /**
-         * Set a single input file using File.
-         * 
-         * @param file The input file
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(file: File): HasFromAndTo = input(file.absolutePath)
-        
-        /**
-         * Set multiple input files using File.
-         * 
-         * @param files The input files
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: File): HasFromAndTo = input(*files.map { it.absolutePath }.toTypedArray())
-        
-        /**
-         * Set multiple input files using Path.
-         * 
-         * @param files The input file paths
-         * @return A [HasFromAndTo] state ready for execution or further configuration
-         */
-        fun input(vararg files: Path): HasFromAndTo = input(*files.map { it.toString() }.toTypedArray())
-        
-        /**
-         * Specify that input will come from stdin.
-         * 
-         * @return A [HasStdinAndTo] state ready for execution or further configuration
-         */
-        fun fromStdin(): HasStdinAndTo = HasStdinAndTo(
-            from = from,
-            to = to,
-            standalone = standalone,
-            template = template,
-            metadata = metadata,
-            variables = variables,
-            toc = toc,
-            tocDepth = tocDepth,
-            output = output
-        )
-    }
-    
-    // ========================================================================
-    // COMPLETE STATES
-    // ========================================================================
-    
-    /**
-     * Complete state with input format, output format, input files, and optional configuration.
-     * 
-     * This state has all terminal operations ([execute], [executeAsync]).
-     */
-    @PandocDsl
-    
-    data class HasFromAndTo internal constructor(
-        val from: InputFormat,
-        val to: OutputFormat,
-        val files: List<String> = emptyList(),
         val standalone: Boolean? = null,
         val template: String? = null,
         val metadata: Map<String, String> = emptyMap(),
@@ -576,338 +151,498 @@ sealed class PandocCommand {
         val log: String? = null
     ) : PandocCommand() {
         
-        // Configuration setters - each returns a new instance
+        // Input methods
         
-        fun input(vararg files: String): HasFromAndTo = copy(files = files.toList())
-        fun input(file: String): HasFromAndTo = copy(files = listOf(file))
-        fun input(file: Path): HasFromAndTo = copy(files = listOf(file.toString()))
-        fun input(file: File): HasFromAndTo = copy(files = listOf(file.absolutePath))
-        fun input(vararg files: File): HasFromAndTo = copy(files = files.map { it.absolutePath })
-        fun input(vararg files: Path): HasFromAndTo = copy(files = files.map { it.toString() })
-        fun standalone(enabled: Boolean = true): HasFromAndTo = copy(standalone = enabled)
-        fun template(file: String): HasFromAndTo = copy(template = file)
-        fun output(file: String): HasFromAndTo = copy(output = file)
-        fun metadata(key: String, value: String): HasFromAndTo = copy(
-            metadata = metadata + (key to value)
+        fun input(vararg files: String): NeedsTo = NeedsTo(
+            from = from,
+            inputSource = InputSource.Files(files.toList()),
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output,
+            wrap = wrap,
+            ascii = ascii,
+            numberSections = numberSections,
+            numberOffset = numberOffset,
+            topLevelDivision = topLevelDivision,
+            extractMedia = extractMedia,
+            resourcePath = resourcePath,
+            includeInHeader = includeInHeader,
+            includeBeforeBody = includeBeforeBody,
+            includeAfterBody = includeAfterBody,
+            highlightStyle = highlightStyle,
+            syntaxDefinition = syntaxDefinition,
+            dpi = dpi,
+            eol = eol,
+            columns = columns,
+            preserveTabs = preserveTabs,
+            tabStop = tabStop,
+            pdfEngine = pdfEngine,
+            pdfEngineOpt = pdfEngineOpt,
+            selfContained = selfContained,
+            embedResources = embedResources,
+            linkImages = linkImages,
+            requestHeaders = requestHeaders,
+            noCheckCertificate = noCheckCertificate,
+            abbreviations = abbreviations,
+            indentedCodeClasses = indentedCodeClasses,
+            defaultImageExtension = defaultImageExtension,
+            filters = filters,
+            luaFilters = luaFilters,
+            shiftHeadingLevelBy = shiftHeadingLevelBy,
+            baseHeaderLevel = baseHeaderLevel,
+            trackChanges = trackChanges,
+            stripComments = stripComments,
+            referenceLinks = referenceLinks,
+            referenceLocation = referenceLocation,
+            figureCaptionPosition = figureCaptionPosition,
+            tableCaptionPosition = tableCaptionPosition,
+            markdownHeadings = markdownHeadings,
+            listTables = listTables,
+            listings = listings,
+            incremental = incremental,
+            slideLevel = slideLevel,
+            sectionDivs = sectionDivs,
+            htmlQTags = htmlQTags,
+            emailObfuscation = emailObfuscation,
+            idPrefix = idPrefix,
+            titlePrefix = titlePrefix,
+            css = css,
+            citeproc = citeproc,
+            bibliography = bibliography,
+            csl = csl,
+            citationAbbreviations = citationAbbreviations,
+            natbib = natbib,
+            biblatex = biblatex,
+            mathml = mathml,
+            webtex = webtex,
+            mathjax = mathjax,
+            katex = katex,
+            gladtex = gladtex,
+            trace = trace,
+            dumpArgs = dumpArgs,
+            ignoreArgs = ignoreArgs,
+            verbose = verbose,
+            quiet = quiet,
+            failIfWarnings = failIfWarnings,
+            log = log
         )
-        fun variable(key: String, value: String): HasFromAndTo = copy(
-            variables = variables + (key to value)
+        
+        fun input(file: String): NeedsTo = input(*arrayOf(file))
+        fun input(file: Path): NeedsTo = input(file.toString())
+        fun input(file: File): NeedsTo = input(file.absolutePath)
+        fun input(vararg files: File): NeedsTo = input(*files.map { it.absolutePath }.toTypedArray())
+        fun input(vararg files: Path): NeedsTo = input(*files.map { it.toString() }.toTypedArray())
+        
+        fun inputString(content: String): NeedsTo = NeedsTo(
+            from = from,
+            inputSource = InputSource.StringInput(content),
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output,
+            wrap = wrap,
+            ascii = ascii,
+            numberSections = numberSections,
+            numberOffset = numberOffset,
+            topLevelDivision = topLevelDivision,
+            extractMedia = extractMedia,
+            resourcePath = resourcePath,
+            includeInHeader = includeInHeader,
+            includeBeforeBody = includeBeforeBody,
+            includeAfterBody = includeAfterBody,
+            highlightStyle = highlightStyle,
+            syntaxDefinition = syntaxDefinition,
+            dpi = dpi,
+            eol = eol,
+            columns = columns,
+            preserveTabs = preserveTabs,
+            tabStop = tabStop,
+            pdfEngine = pdfEngine,
+            pdfEngineOpt = pdfEngineOpt,
+            selfContained = selfContained,
+            embedResources = embedResources,
+            linkImages = linkImages,
+            requestHeaders = requestHeaders,
+            noCheckCertificate = noCheckCertificate,
+            abbreviations = abbreviations,
+            indentedCodeClasses = indentedCodeClasses,
+            defaultImageExtension = defaultImageExtension,
+            filters = filters,
+            luaFilters = luaFilters,
+            shiftHeadingLevelBy = shiftHeadingLevelBy,
+            baseHeaderLevel = baseHeaderLevel,
+            trackChanges = trackChanges,
+            stripComments = stripComments,
+            referenceLinks = referenceLinks,
+            referenceLocation = referenceLocation,
+            figureCaptionPosition = figureCaptionPosition,
+            tableCaptionPosition = tableCaptionPosition,
+            markdownHeadings = markdownHeadings,
+            listTables = listTables,
+            listings = listings,
+            incremental = incremental,
+            slideLevel = slideLevel,
+            sectionDivs = sectionDivs,
+            htmlQTags = htmlQTags,
+            emailObfuscation = emailObfuscation,
+            idPrefix = idPrefix,
+            titlePrefix = titlePrefix,
+            css = css,
+            citeproc = citeproc,
+            bibliography = bibliography,
+            csl = csl,
+            citationAbbreviations = citationAbbreviations,
+            natbib = natbib,
+            biblatex = biblatex,
+            mathml = mathml,
+            webtex = webtex,
+            mathjax = mathjax,
+            katex = katex,
+            gladtex = gladtex,
+            trace = trace,
+            dumpArgs = dumpArgs,
+            ignoreArgs = ignoreArgs,
+            verbose = verbose,
+            quiet = quiet,
+            failIfWarnings = failIfWarnings,
+            log = log
         )
-        fun toc(depth: Int? = null): HasFromAndTo = copy(toc = true, tocDepth = depth)
-        fun wrap(option: WrapOption): HasFromAndTo = copy(wrap = option)
-        fun ascii(enabled: Boolean = true): HasFromAndTo = copy(ascii = enabled)
-        fun numberSections(enabled: Boolean = true): HasFromAndTo = copy(numberSections = enabled)
-        fun numberOffset(vararg offsets: Int): HasFromAndTo = copy(numberOffset = offsets.toList())
-        fun topLevelDivision(division: TopLevelDivision): HasFromAndTo = copy(topLevelDivision = division)
-        fun extractMedia(path: String): HasFromAndTo = copy(extractMedia = path)
-        fun resourcePath(vararg paths: String): HasFromAndTo = copy(resourcePath = paths.toList())
-        fun includeInHeader(file: String): HasFromAndTo = copy(
-            includeInHeader = (includeInHeader ?: emptyList()) + file
-        )
-        fun includeBeforeBody(file: String): HasFromAndTo = copy(
-            includeBeforeBody = (includeBeforeBody ?: emptyList()) + file
-        )
-        fun includeAfterBody(file: String): HasFromAndTo = copy(
-            includeAfterBody = (includeAfterBody ?: emptyList()) + file
-        )
-        fun highlightStyle(style: String): HasFromAndTo = copy(highlightStyle = style)
-        fun syntaxDefinition(file: String): HasFromAndTo = copy(syntaxDefinition = file)
-        fun dpi(value: Int): HasFromAndTo = copy(dpi = value)
-        fun eol(option: EOL): HasFromAndTo = copy(eol = option)
-        fun columns(value: Int): HasFromAndTo = copy(columns = value)
-        fun preserveTabs(enabled: Boolean = true): HasFromAndTo = copy(preserveTabs = enabled)
-        fun tabStop(value: Int): HasFromAndTo = copy(tabStop = value)
-        fun pdfEngine(engine: String): HasFromAndTo = copy(pdfEngine = engine)
-        fun pdfEngineOpt(option: String): HasFromAndTo = copy(
-            pdfEngineOpt = (pdfEngineOpt ?: emptyList()) + option
-        )
-        fun selfContained(enabled: Boolean = true): HasFromAndTo = copy(selfContained = enabled)
-        fun embedResources(enabled: Boolean = true): HasFromAndTo = copy(embedResources = enabled)
-        fun linkImages(enabled: Boolean = true): HasFromAndTo = copy(linkImages = enabled)
-        fun requestHeader(name: String, value: String): HasFromAndTo = copy(
-            requestHeaders = (requestHeaders ?: emptyMap()) + (name to value)
-        )
-        fun noCheckCertificate(enabled: Boolean = true): HasFromAndTo = copy(noCheckCertificate = enabled)
-        fun abbreviations(file: String): HasFromAndTo = copy(abbreviations = file)
-        fun indentedCodeClasses(classes: String): HasFromAndTo = copy(indentedCodeClasses = classes)
-        fun defaultImageExtension(extension: String): HasFromAndTo = copy(defaultImageExtension = extension)
-        fun filter(program: String): HasFromAndTo = copy(
-            filters = (filters ?: emptyList()) + program
-        )
-        fun luaFilter(script: String): HasFromAndTo = copy(
-            luaFilters = (luaFilters ?: emptyList()) + script
-        )
-        fun shiftHeadingLevelBy(value: Int): HasFromAndTo = copy(shiftHeadingLevelBy = value)
-        fun baseHeaderLevel(value: Int): HasFromAndTo = copy(baseHeaderLevel = value)
-        fun trackChanges(mode: TrackChanges): HasFromAndTo = copy(trackChanges = mode)
-        fun stripComments(enabled: Boolean = true): HasFromAndTo = copy(stripComments = enabled)
-        fun referenceLinks(enabled: Boolean = true): HasFromAndTo = copy(referenceLinks = enabled)
-        fun referenceLocation(location: ReferenceLocation): HasFromAndTo = copy(referenceLocation = location)
-        fun figureCaptionPosition(position: CaptionPosition): HasFromAndTo = copy(figureCaptionPosition = position)
-        fun tableCaptionPosition(position: CaptionPosition): HasFromAndTo = copy(tableCaptionPosition = position)
-        fun markdownHeadings(style: MarkdownHeadingStyle): HasFromAndTo = copy(markdownHeadings = style)
-        fun listTables(enabled: Boolean = true): HasFromAndTo = copy(listTables = enabled)
-        fun listings(enabled: Boolean = true): HasFromAndTo = copy(listings = enabled)
-        fun incremental(enabled: Boolean = true): HasFromAndTo = copy(incremental = enabled)
-        fun slideLevel(value: Int): HasFromAndTo = copy(slideLevel = value)
-        fun sectionDivs(enabled: Boolean = true): HasFromAndTo = copy(sectionDivs = enabled)
-        fun htmlQTags(enabled: Boolean = true): HasFromAndTo = copy(htmlQTags = enabled)
-        fun emailObfuscation(mode: EmailObfuscation): HasFromAndTo = copy(emailObfuscation = mode)
-        fun idPrefix(prefix: String): HasFromAndTo = copy(idPrefix = prefix)
-        fun titlePrefix(prefix: String): HasFromAndTo = copy(titlePrefix = prefix)
-        fun css(url: String): HasFromAndTo = copy(css = url)
-        fun citeproc(enabled: Boolean = true): HasFromAndTo = copy(citeproc = enabled)
-        fun bibliography(file: String): HasFromAndTo = copy(bibliography = file)
-        fun csl(file: String): HasFromAndTo = copy(csl = file)
-        fun citationAbbreviations(file: String): HasFromAndTo = copy(citationAbbreviations = file)
-        fun natbib(enabled: Boolean = true): HasFromAndTo = copy(natbib = enabled)
-        fun biblatex(enabled: Boolean = true): HasFromAndTo = copy(biblatex = enabled)
-        fun mathml(enabled: Boolean = true): HasFromAndTo = copy(mathml = enabled)
-        fun webtex(url: String? = null): HasFromAndTo = copy(webtex = url)
-        fun mathjax(url: String? = null): HasFromAndTo = copy(mathjax = url)
-        fun katex(url: String? = null): HasFromAndTo = copy(katex = url)
-        fun gladtex(enabled: Boolean = true): HasFromAndTo = copy(gladtex = enabled)
-        fun trace(enabled: Boolean = true): HasFromAndTo = copy(trace = enabled)
-        fun dumpArgs(enabled: Boolean = true): HasFromAndTo = copy(dumpArgs = enabled)
-        fun ignoreArgs(enabled: Boolean = true): HasFromAndTo = copy(ignoreArgs = enabled)
-        fun verbose(enabled: Boolean = true): HasFromAndTo = copy(verbose = enabled)
-        fun quiet(enabled: Boolean = true): HasFromAndTo = copy(quiet = enabled)
-        fun failIfWarnings(enabled: Boolean = true): HasFromAndTo = copy(failIfWarnings = enabled)
-        fun log(file: String): HasFromAndTo = copy(log = file)
         
-        // Terminal operations
-        
-        /**
-         * Execute the pandoc command synchronously.
-         * 
-         * This reads from the specified input files and returns the output as a string.
-         * For stdin input, use [execute(String)] on [HasStdinAndTo].
-         * 
-         * @return The output from pandoc
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        fun execute(): String = executeSync()
-        
-        /**
-         * Execute the pandoc command asynchronously.
-         * 
-         * @return The output from pandoc
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        suspend fun executeAsync(): String = withContext(Dispatchers.IO) {
-            executeSync()
-        }
-        
-        /**
-         * Execute the pandoc command and write output to a file.
-         * 
-         * @param file The output file path
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        fun executeToFile(file: String) = executeToFileSync(file)
-        
-        /**
-         * Execute the pandoc command asynchronously and write output to a file.
-         * 
-         * @param file The output file path
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        suspend fun executeToFileAsync(file: String) = withContext(Dispatchers.IO) {
-            executeToFileSync(file)
-        }
-        
-        private fun executeSync(): String {
-            val command = buildCommandLine()
-            return runPandoc(command)
-        }
-        
-        private fun executeToFileSync(file: String): Unit {
-            val command = buildCommandLine(file)
-            runPandoc(command)
-        }
-        
-        private fun buildCommandLine(outputFile: String? = null): List<String> {
-            val args = mutableListOf<String>("pandoc")
-            
-            // Input/Output
-            args.addAll(listOf("-f", from.value))
-            args.addAll(listOf("-t", to.value))
-            outputFile?.let { args.addAll(listOf("-o", it)) }
-            output?.let { args.addAll(listOf("-o", it)) }
-            
-            // General options
-            standalone?.let { if (it) args.add("--standalone") }
-            template?.let { args.addAll(listOf("--template", it)) }
-            wrap?.let { args.addAll(listOf("--wrap", it.value)) }
-            ascii?.let { if (it) args.add("--ascii") }
-            
-            // Metadata
-            metadata.forEach { (key, value) ->
-                args.addAll(listOf("-M", "$key=$value"))
-            }
-            variables.forEach { (key, value) ->
-                args.addAll(listOf("-V", "$key=$value"))
-            }
-            
-            // Table of contents
-            toc?.let { if (it) args.add("--toc") }
-            tocDepth?.let { args.addAll(listOf("--toc-depth", it.toString())) }
-            
-            // Files
-            args.addAll(files)
-            
-            return args
-        }
-        
-        private fun runPandoc(command: List<String>): String {
-            try {
-                // Check if pandoc is available
-                val process = ProcessBuilder(command)
-                    .redirectErrorStream(false)
-                    .start()
-                
-                val stdout = process.inputStream.bufferedReader().readText()
-                val stderr = process.errorStream.bufferedReader().readText()
-                val exitCode = process.waitFor()
-                
-                if (exitCode != 0) {
-                    throw PandocExecutionException(
-                        message = "Pandoc execution failed with exit code $exitCode",
-                        exitCode = exitCode,
-                        command = command,
-                        stdout = stdout,
-                        stderr = stderr
-                    )
-                }
-                
-                return stdout
-            } catch (e: Exception) {
-                if (e is PandocExecutionException) throw e
-                throw PandocNotFoundException("Failed to execute pandoc", e)
-            }
-        }
+        // Configuration options
+        fun standalone(enabled: Boolean = true): HasFrom = copy(standalone = enabled)
+        fun template(file: String): HasFrom = copy(template = file)
+        fun metadata(key: String, value: String): HasFrom = copy(metadata = metadata + (key to value))
+        fun variable(key: String, value: String): HasFrom = copy(variables = variables + (key to value))
+        fun toc(depth: Int? = null): HasFrom = copy(toc = true, tocDepth = depth)
+        fun output(file: String): HasFrom = copy(output = file)
+        fun wrap(option: WrapOption): HasFrom = copy(wrap = option)
+        fun ascii(enabled: Boolean = true): HasFrom = copy(ascii = enabled)
+        fun numberSections(enabled: Boolean = true): HasFrom = copy(numberSections = enabled)
+        fun numberOffset(vararg offsets: Int): HasFrom = copy(numberOffset = offsets.toList())
+        fun topLevelDivision(division: TopLevelDivision): HasFrom = copy(topLevelDivision = division)
+        fun extractMedia(path: String): HasFrom = copy(extractMedia = path)
+        fun resourcePath(vararg paths: String): HasFrom = copy(resourcePath = paths.toList())
+        fun includeInHeader(file: String): HasFrom = copy(includeInHeader = (includeInHeader ?: emptyList()) + file)
+        fun includeBeforeBody(file: String): HasFrom = copy(includeBeforeBody = (includeBeforeBody ?: emptyList()) + file)
+        fun includeAfterBody(file: String): HasFrom = copy(includeAfterBody = (includeAfterBody ?: emptyList()) + file)
+        fun highlightStyle(style: String): HasFrom = copy(highlightStyle = style)
+        fun syntaxDefinition(file: String): HasFrom = copy(syntaxDefinition = file)
+        fun dpi(value: Int): HasFrom = copy(dpi = value)
+        fun eol(option: EOL): HasFrom = copy(eol = option)
+        fun columns(value: Int): HasFrom = copy(columns = value)
+        fun preserveTabs(enabled: Boolean = true): HasFrom = copy(preserveTabs = enabled)
+        fun tabStop(value: Int): HasFrom = copy(tabStop = value)
+        fun pdfEngine(engine: String): HasFrom = copy(pdfEngine = engine)
+        fun pdfEngineOpt(option: String): HasFrom = copy(pdfEngineOpt = (pdfEngineOpt ?: emptyList()) + option)
+        fun selfContained(enabled: Boolean = true): HasFrom = copy(selfContained = enabled)
+        fun embedResources(enabled: Boolean = true): HasFrom = copy(embedResources = enabled)
+        fun linkImages(enabled: Boolean = true): HasFrom = copy(linkImages = enabled)
+        fun requestHeader(name: String, value: String): HasFrom = copy(requestHeaders = (requestHeaders ?: emptyMap()) + (name to value))
+        fun noCheckCertificate(enabled: Boolean = true): HasFrom = copy(noCheckCertificate = enabled)
+        fun abbreviations(file: String): HasFrom = copy(abbreviations = file)
+        fun indentedCodeClasses(classes: String): HasFrom = copy(indentedCodeClasses = classes)
+        fun defaultImageExtension(extension: String): HasFrom = copy(defaultImageExtension = extension)
+        fun filter(program: String): HasFrom = copy(filters = (filters ?: emptyList()) + program)
+        fun luaFilter(script: String): HasFrom = copy(luaFilters = (luaFilters ?: emptyList()) + script)
+        fun shiftHeadingLevelBy(value: Int): HasFrom = copy(shiftHeadingLevelBy = value)
+        fun baseHeaderLevel(value: Int): HasFrom = copy(baseHeaderLevel = value)
+        fun trackChanges(mode: TrackChanges): HasFrom = copy(trackChanges = mode)
+        fun stripComments(enabled: Boolean = true): HasFrom = copy(stripComments = enabled)
+        fun referenceLinks(enabled: Boolean = true): HasFrom = copy(referenceLinks = enabled)
+        fun referenceLocation(location: ReferenceLocation): HasFrom = copy(referenceLocation = location)
+        fun figureCaptionPosition(position: CaptionPosition): HasFrom = copy(figureCaptionPosition = position)
+        fun tableCaptionPosition(position: CaptionPosition): HasFrom = copy(tableCaptionPosition = position)
+        fun markdownHeadings(style: MarkdownHeadingStyle): HasFrom = copy(markdownHeadings = style)
+        fun listTables(enabled: Boolean = true): HasFrom = copy(listTables = enabled)
+        fun listings(enabled: Boolean = true): HasFrom = copy(listings = enabled)
+        fun incremental(enabled: Boolean = true): HasFrom = copy(incremental = enabled)
+        fun slideLevel(value: Int): HasFrom = copy(slideLevel = value)
+        fun sectionDivs(enabled: Boolean = true): HasFrom = copy(sectionDivs = enabled)
+        fun htmlQTags(enabled: Boolean = true): HasFrom = copy(htmlQTags = enabled)
+        fun emailObfuscation(mode: EmailObfuscation): HasFrom = copy(emailObfuscation = mode)
+        fun idPrefix(prefix: String): HasFrom = copy(idPrefix = prefix)
+        fun titlePrefix(prefix: String): HasFrom = copy(titlePrefix = prefix)
+        fun css(url: String): HasFrom = copy(css = url)
+        fun citeproc(enabled: Boolean = true): HasFrom = copy(citeproc = enabled)
+        fun bibliography(file: String): HasFrom = copy(bibliography = file)
+        fun csl(file: String): HasFrom = copy(csl = file)
+        fun citationAbbreviations(file: String): HasFrom = copy(citationAbbreviations = file)
+        fun natbib(enabled: Boolean = true): HasFrom = copy(natbib = enabled)
+        fun biblatex(enabled: Boolean = true): HasFrom = copy(biblatex = enabled)
+        fun mathml(enabled: Boolean = true): HasFrom = copy(mathml = enabled)
+        fun webtex(url: String? = null): HasFrom = copy(webtex = url)
+        fun mathjax(url: String? = null): HasFrom = copy(mathjax = url)
+        fun katex(url: String? = null): HasFrom = copy(katex = url)
+        fun gladtex(enabled: Boolean = true): HasFrom = copy(gladtex = enabled)
+        fun trace(enabled: Boolean = true): HasFrom = copy(trace = enabled)
+        fun dumpArgs(enabled: Boolean = true): HasFrom = copy(dumpArgs = enabled)
+        fun ignoreArgs(enabled: Boolean = true): HasFrom = copy(ignoreArgs = enabled)
+        fun verbose(enabled: Boolean = true): HasFrom = copy(verbose = enabled)
+        fun quiet(enabled: Boolean = true): HasFrom = copy(quiet = enabled)
+        fun failIfWarnings(enabled: Boolean = true): HasFrom = copy(failIfWarnings = enabled)
+        fun log(file: String): HasFrom = copy(log = file)
     }
     
     // ========================================================================
-    // HAS INPUT AND TO
+    // NEEDS TO
     // ========================================================================
     
     /**
-     * Complete state with input files, output format, and optional configuration.
-     * 
-     * This state has all terminal operations ([execute], [executeAsync]).
+     * State where input format and input source are set but output format is not yet set.
      */
     @PandocDsl
-    
-    data class HasInputAndTo internal constructor(
-        val files: List<String>,
-        val to: OutputFormat,
+    data class NeedsTo internal constructor(
+        val from: InputFormat,
+        val inputSource: InputSource,
         val standalone: Boolean? = null,
         val template: String? = null,
         val metadata: Map<String, String> = emptyMap(),
         val variables: Map<String, String> = emptyMap(),
         val toc: Boolean? = null,
         val tocDepth: Int? = null,
-        val output: String? = null
+        val output: String? = null,
+        val wrap: WrapOption? = null,
+        val ascii: Boolean? = null,
+        val numberSections: Boolean? = null,
+        val numberOffset: List<Int>? = null,
+        val topLevelDivision: TopLevelDivision? = null,
+        val extractMedia: String? = null,
+        val resourcePath: List<String>? = null,
+        val includeInHeader: List<String>? = null,
+        val includeBeforeBody: List<String>? = null,
+        val includeAfterBody: List<String>? = null,
+        val highlightStyle: String? = null,
+        val syntaxDefinition: String? = null,
+        val dpi: Int? = null,
+        val eol: EOL? = null,
+        val columns: Int? = null,
+        val preserveTabs: Boolean? = null,
+        val tabStop: Int? = null,
+        val pdfEngine: String? = null,
+        val pdfEngineOpt: List<String>? = null,
+        val selfContained: Boolean? = null,
+        val embedResources: Boolean? = null,
+        val linkImages: Boolean? = null,
+        val requestHeaders: Map<String, String>? = null,
+        val noCheckCertificate: Boolean? = null,
+        val abbreviations: String? = null,
+        val indentedCodeClasses: String? = null,
+        val defaultImageExtension: String? = null,
+        val filters: List<String>? = null,
+        val luaFilters: List<String>? = null,
+        val shiftHeadingLevelBy: Int? = null,
+        val baseHeaderLevel: Int? = null,
+        val trackChanges: TrackChanges? = null,
+        val stripComments: Boolean? = null,
+        val referenceLinks: Boolean? = null,
+        val referenceLocation: ReferenceLocation? = null,
+        val figureCaptionPosition: CaptionPosition? = null,
+        val tableCaptionPosition: CaptionPosition? = null,
+        val markdownHeadings: MarkdownHeadingStyle? = null,
+        val listTables: Boolean? = null,
+        val listings: Boolean? = null,
+        val incremental: Boolean? = null,
+        val slideLevel: Int? = null,
+        val sectionDivs: Boolean? = null,
+        val htmlQTags: Boolean? = null,
+        val emailObfuscation: EmailObfuscation? = null,
+        val idPrefix: String? = null,
+        val titlePrefix: String? = null,
+        val css: String? = null,
+        val citeproc: Boolean? = null,
+        val bibliography: String? = null,
+        val csl: String? = null,
+        val citationAbbreviations: String? = null,
+        val natbib: Boolean? = null,
+        val biblatex: Boolean? = null,
+        val mathml: Boolean? = null,
+        val webtex: String? = null,
+        val mathjax: String? = null,
+        val katex: String? = null,
+        val gladtex: Boolean? = null,
+        val trace: Boolean? = null,
+        val dumpArgs: Boolean? = null,
+        val ignoreArgs: Boolean? = null,
+        val verbose: Boolean? = null,
+        val quiet: Boolean? = null,
+        val failIfWarnings: Boolean? = null,
+        val log: String? = null
     ) : PandocCommand() {
         
+        fun to(format: OutputFormat): Complete = Complete(
+            from = from,
+            inputSource = inputSource,
+            to = format,
+            standalone = standalone,
+            template = template,
+            metadata = metadata,
+            variables = variables,
+            toc = toc,
+            tocDepth = tocDepth,
+            output = output,
+            wrap = wrap,
+            ascii = ascii,
+            numberSections = numberSections,
+            numberOffset = numberOffset,
+            topLevelDivision = topLevelDivision,
+            extractMedia = extractMedia,
+            resourcePath = resourcePath,
+            includeInHeader = includeInHeader,
+            includeBeforeBody = includeBeforeBody,
+            includeAfterBody = includeAfterBody,
+            highlightStyle = highlightStyle,
+            syntaxDefinition = syntaxDefinition,
+            dpi = dpi,
+            eol = eol,
+            columns = columns,
+            preserveTabs = preserveTabs,
+            tabStop = tabStop,
+            pdfEngine = pdfEngine,
+            pdfEngineOpt = pdfEngineOpt,
+            selfContained = selfContained,
+            embedResources = embedResources,
+            linkImages = linkImages,
+            requestHeaders = requestHeaders,
+            noCheckCertificate = noCheckCertificate,
+            abbreviations = abbreviations,
+            indentedCodeClasses = indentedCodeClasses,
+            defaultImageExtension = defaultImageExtension,
+            filters = filters,
+            luaFilters = luaFilters,
+            shiftHeadingLevelBy = shiftHeadingLevelBy,
+            baseHeaderLevel = baseHeaderLevel,
+            trackChanges = trackChanges,
+            stripComments = stripComments,
+            referenceLinks = referenceLinks,
+            referenceLocation = referenceLocation,
+            figureCaptionPosition = figureCaptionPosition,
+            tableCaptionPosition = tableCaptionPosition,
+            markdownHeadings = markdownHeadings,
+            listTables = listTables,
+            listings = listings,
+            incremental = incremental,
+            slideLevel = slideLevel,
+            sectionDivs = sectionDivs,
+            htmlQTags = htmlQTags,
+            emailObfuscation = emailObfuscation,
+            idPrefix = idPrefix,
+            titlePrefix = titlePrefix,
+            css = css,
+            citeproc = citeproc,
+            bibliography = bibliography,
+            csl = csl,
+            citationAbbreviations = citationAbbreviations,
+            natbib = natbib,
+            biblatex = biblatex,
+            mathml = mathml,
+            webtex = webtex,
+            mathjax = mathjax,
+            katex = katex,
+            gladtex = gladtex,
+            trace = trace,
+            dumpArgs = dumpArgs,
+            ignoreArgs = ignoreArgs,
+            verbose = verbose,
+            quiet = quiet,
+            failIfWarnings = failIfWarnings,
+            log = log
+        )
+        
         // Configuration setters
-        fun standalone(enabled: Boolean = true): HasInputAndTo = copy(standalone = enabled)
-        fun template(file: String): HasInputAndTo = copy(template = file)
-        fun output(file: String): HasInputAndTo = copy(output = file)
-        fun metadata(key: String, value: String): HasInputAndTo = copy(
-            metadata = metadata + (key to value)
-        )
-        fun variable(key: String, value: String): HasInputAndTo = copy(
-            variables = variables + (key to value)
-        )
-        fun toc(depth: Int? = null): HasInputAndTo = copy(toc = true, tocDepth = depth)
-        
-        // Terminal operations
-        fun execute(): String = executeSync()
-        suspend fun executeAsync(): String = withContext(Dispatchers.IO) { executeSync() }
-        fun executeToFile(file: String) = executeToFileSync(file)
-        suspend fun executeToFileAsync(file: String) = withContext(Dispatchers.IO) { executeToFileSync(file) }
-        
-        private fun executeSync(): String {
-            val command = buildCommandLine()
-            return runPandoc(command)
-        }
-        
-        private fun executeToFileSync(file: String) {
-            val command = buildCommandLine(file)
-            runPandoc(command)
-        }
-        
-        private fun buildCommandLine(outputFile: String? = null): List<String> {
-            val args = mutableListOf<String>("pandoc")
-            
-            args.addAll(listOf("-t", to.value))
-            outputFile?.let { args.addAll(listOf("-o", it)) }
-            output?.let { args.addAll(listOf("-o", it)) }
-            
-            standalone?.let { if (it) args.add("--standalone") }
-            template?.let { args.addAll(listOf("--template", it)) }
-            
-            metadata.forEach { (key, value) ->
-                args.addAll(listOf("-M", "$key=$value"))
-            }
-            variables.forEach { (key, value) ->
-                args.addAll(listOf("-V", "$key=$value"))
-            }
-            
-            toc?.let { if (it) args.add("--toc") }
-            tocDepth?.let { args.addAll(listOf("--toc-depth", it.toString())) }
-            
-            args.addAll(files)
-            
-            return args
-        }
-        
-        private fun runPandoc(command: List<String>): String {
-            try {
-                val process = ProcessBuilder(command)
-                    .redirectErrorStream(false)
-                    .start()
-                
-                val stdout = process.inputStream.bufferedReader().readText()
-                val stderr = process.errorStream.bufferedReader().readText()
-                val exitCode = process.waitFor()
-                
-                if (exitCode != 0) {
-                    throw PandocExecutionException(
-                        message = "Pandoc execution failed with exit code $exitCode",
-                        exitCode = exitCode,
-                        command = command,
-                        stdout = stdout,
-                        stderr = stderr
-                    )
-                }
-                
-                return stdout
-            } catch (e: Exception) {
-                if (e is PandocExecutionException) throw e
-                throw PandocNotFoundException("Failed to execute pandoc", e)
-            }
-        }
+        fun standalone(enabled: Boolean = true): NeedsTo = copy(standalone = enabled)
+        fun template(file: String): NeedsTo = copy(template = file)
+        fun metadata(key: String, value: String): NeedsTo = copy(metadata = metadata + (key to value))
+        fun variable(key: String, value: String): NeedsTo = copy(variables = variables + (key to value))
+        fun toc(depth: Int? = null): NeedsTo = copy(toc = true, tocDepth = depth)
+        fun output(file: String): NeedsTo = copy(output = file)
+        fun wrap(option: WrapOption): NeedsTo = copy(wrap = option)
+        fun ascii(enabled: Boolean = true): NeedsTo = copy(ascii = enabled)
+        fun numberSections(enabled: Boolean = true): NeedsTo = copy(numberSections = enabled)
+        fun numberOffset(vararg offsets: Int): NeedsTo = copy(numberOffset = offsets.toList())
+        fun topLevelDivision(division: TopLevelDivision): NeedsTo = copy(topLevelDivision = division)
+        fun extractMedia(path: String): NeedsTo = copy(extractMedia = path)
+        fun resourcePath(vararg paths: String): NeedsTo = copy(resourcePath = paths.toList())
+        fun includeInHeader(file: String): NeedsTo = copy(includeInHeader = (includeInHeader ?: emptyList()) + file)
+        fun includeBeforeBody(file: String): NeedsTo = copy(includeBeforeBody = (includeBeforeBody ?: emptyList()) + file)
+        fun includeAfterBody(file: String): NeedsTo = copy(includeAfterBody = (includeAfterBody ?: emptyList()) + file)
+        fun highlightStyle(style: String): NeedsTo = copy(highlightStyle = style)
+        fun syntaxDefinition(file: String): NeedsTo = copy(syntaxDefinition = file)
+        fun dpi(value: Int): NeedsTo = copy(dpi = value)
+        fun eol(option: EOL): NeedsTo = copy(eol = option)
+        fun columns(value: Int): NeedsTo = copy(columns = value)
+        fun preserveTabs(enabled: Boolean = true): NeedsTo = copy(preserveTabs = enabled)
+        fun tabStop(value: Int): NeedsTo = copy(tabStop = value)
+        fun pdfEngine(engine: String): NeedsTo = copy(pdfEngine = engine)
+        fun pdfEngineOpt(option: String): NeedsTo = copy(pdfEngineOpt = (pdfEngineOpt ?: emptyList()) + option)
+        fun selfContained(enabled: Boolean = true): NeedsTo = copy(selfContained = enabled)
+        fun embedResources(enabled: Boolean = true): NeedsTo = copy(embedResources = enabled)
+        fun linkImages(enabled: Boolean = true): NeedsTo = copy(linkImages = enabled)
+        fun requestHeader(name: String, value: String): NeedsTo = copy(requestHeaders = (requestHeaders ?: emptyMap()) + (name to value))
+        fun noCheckCertificate(enabled: Boolean = true): NeedsTo = copy(noCheckCertificate = enabled)
+        fun abbreviations(file: String): NeedsTo = copy(abbreviations = file)
+        fun indentedCodeClasses(classes: String): NeedsTo = copy(indentedCodeClasses = classes)
+        fun defaultImageExtension(extension: String): NeedsTo = copy(defaultImageExtension = extension)
+        fun filter(program: String): NeedsTo = copy(filters = (filters ?: emptyList()) + program)
+        fun luaFilter(script: String): NeedsTo = copy(luaFilters = (luaFilters ?: emptyList()) + script)
+        fun shiftHeadingLevelBy(value: Int): NeedsTo = copy(shiftHeadingLevelBy = value)
+        fun baseHeaderLevel(value: Int): NeedsTo = copy(baseHeaderLevel = value)
+        fun trackChanges(mode: TrackChanges): NeedsTo = copy(trackChanges = mode)
+        fun stripComments(enabled: Boolean = true): NeedsTo = copy(stripComments = enabled)
+        fun referenceLinks(enabled: Boolean = true): NeedsTo = copy(referenceLinks = enabled)
+        fun referenceLocation(location: ReferenceLocation): NeedsTo = copy(referenceLocation = location)
+        fun figureCaptionPosition(position: CaptionPosition): NeedsTo = copy(figureCaptionPosition = position)
+        fun tableCaptionPosition(position: CaptionPosition): NeedsTo = copy(tableCaptionPosition = position)
+        fun markdownHeadings(style: MarkdownHeadingStyle): NeedsTo = copy(markdownHeadings = style)
+        fun listTables(enabled: Boolean = true): NeedsTo = copy(listTables = enabled)
+        fun listings(enabled: Boolean = true): NeedsTo = copy(listings = enabled)
+        fun incremental(enabled: Boolean = true): NeedsTo = copy(incremental = enabled)
+        fun slideLevel(value: Int): NeedsTo = copy(slideLevel = value)
+        fun sectionDivs(enabled: Boolean = true): NeedsTo = copy(sectionDivs = enabled)
+        fun htmlQTags(enabled: Boolean = true): NeedsTo = copy(htmlQTags = enabled)
+        fun emailObfuscation(mode: EmailObfuscation): NeedsTo = copy(emailObfuscation = mode)
+        fun idPrefix(prefix: String): NeedsTo = copy(idPrefix = prefix)
+        fun titlePrefix(prefix: String): NeedsTo = copy(titlePrefix = prefix)
+        fun css(url: String): NeedsTo = copy(css = url)
+        fun citeproc(enabled: Boolean = true): NeedsTo = copy(citeproc = enabled)
+        fun bibliography(file: String): NeedsTo = copy(bibliography = file)
+        fun csl(file: String): NeedsTo = copy(csl = file)
+        fun citationAbbreviations(file: String): NeedsTo = copy(citationAbbreviations = file)
+        fun natbib(enabled: Boolean = true): NeedsTo = copy(natbib = enabled)
+        fun biblatex(enabled: Boolean = true): NeedsTo = copy(biblatex = enabled)
+        fun mathml(enabled: Boolean = true): NeedsTo = copy(mathml = enabled)
+        fun webtex(url: String? = null): NeedsTo = copy(webtex = url)
+        fun mathjax(url: String? = null): NeedsTo = copy(mathjax = url)
+        fun katex(url: String? = null): NeedsTo = copy(katex = url)
+        fun gladtex(enabled: Boolean = true): NeedsTo = copy(gladtex = enabled)
+        fun trace(enabled: Boolean = true): NeedsTo = copy(trace = enabled)
+        fun dumpArgs(enabled: Boolean = true): NeedsTo = copy(dumpArgs = enabled)
+        fun ignoreArgs(enabled: Boolean = true): NeedsTo = copy(ignoreArgs = enabled)
+        fun verbose(enabled: Boolean = true): NeedsTo = copy(verbose = enabled)
+        fun quiet(enabled: Boolean = true): NeedsTo = copy(quiet = enabled)
+        fun failIfWarnings(enabled: Boolean = true): NeedsTo = copy(failIfWarnings = enabled)
+        fun log(file: String): NeedsTo = copy(log = file)
     }
     
     // ========================================================================
-    // HAS STDIN AND TO
+    // COMPLETE STATE
     // ========================================================================
     
     /**
-     * Complete state with stdin input, output format, and optional configuration.
+     * Complete state with all required fields set (input format, input source, output format).
      * 
-     * This state has terminal operations that accept input content as a string.
+     * This state has all terminal operations ([execute], [executeAsync], [executeToFile], [executeToFileAsync]).
      */
     @PandocDsl
-    
-    data class HasStdinAndTo internal constructor(
+    data class Complete internal constructor(
+        val from: InputFormat,
+        val inputSource: InputSource,
         val to: OutputFormat,
         val standalone: Boolean? = null,
         val template: String? = null,
@@ -916,77 +651,177 @@ sealed class PandocCommand {
         val toc: Boolean? = null,
         val tocDepth: Int? = null,
         val output: String? = null,
-        val from: InputFormat? = null
+        val wrap: WrapOption? = null,
+        val ascii: Boolean? = null,
+        val numberSections: Boolean? = null,
+        val numberOffset: List<Int>? = null,
+        val topLevelDivision: TopLevelDivision? = null,
+        val extractMedia: String? = null,
+        val resourcePath: List<String>? = null,
+        val includeInHeader: List<String>? = null,
+        val includeBeforeBody: List<String>? = null,
+        val includeAfterBody: List<String>? = null,
+        val highlightStyle: String? = null,
+        val syntaxDefinition: String? = null,
+        val dpi: Int? = null,
+        val eol: EOL? = null,
+        val columns: Int? = null,
+        val preserveTabs: Boolean? = null,
+        val tabStop: Int? = null,
+        val pdfEngine: String? = null,
+        val pdfEngineOpt: List<String>? = null,
+        val selfContained: Boolean? = null,
+        val embedResources: Boolean? = null,
+        val linkImages: Boolean? = null,
+        val requestHeaders: Map<String, String>? = null,
+        val noCheckCertificate: Boolean? = null,
+        val abbreviations: String? = null,
+        val indentedCodeClasses: String? = null,
+        val defaultImageExtension: String? = null,
+        val filters: List<String>? = null,
+        val luaFilters: List<String>? = null,
+        val shiftHeadingLevelBy: Int? = null,
+        val baseHeaderLevel: Int? = null,
+        val trackChanges: TrackChanges? = null,
+        val stripComments: Boolean? = null,
+        val referenceLinks: Boolean? = null,
+        val referenceLocation: ReferenceLocation? = null,
+        val figureCaptionPosition: CaptionPosition? = null,
+        val tableCaptionPosition: CaptionPosition? = null,
+        val markdownHeadings: MarkdownHeadingStyle? = null,
+        val listTables: Boolean? = null,
+        val listings: Boolean? = null,
+        val incremental: Boolean? = null,
+        val slideLevel: Int? = null,
+        val sectionDivs: Boolean? = null,
+        val htmlQTags: Boolean? = null,
+        val emailObfuscation: EmailObfuscation? = null,
+        val idPrefix: String? = null,
+        val titlePrefix: String? = null,
+        val css: String? = null,
+        val citeproc: Boolean? = null,
+        val bibliography: String? = null,
+        val csl: String? = null,
+        val citationAbbreviations: String? = null,
+        val natbib: Boolean? = null,
+        val biblatex: Boolean? = null,
+        val mathml: Boolean? = null,
+        val webtex: String? = null,
+        val mathjax: String? = null,
+        val katex: String? = null,
+        val gladtex: Boolean? = null,
+        val trace: Boolean? = null,
+        val dumpArgs: Boolean? = null,
+        val ignoreArgs: Boolean? = null,
+        val verbose: Boolean? = null,
+        val quiet: Boolean? = null,
+        val failIfWarnings: Boolean? = null,
+        val log: String? = null
     ) : PandocCommand() {
         
-        /**
-         * Set the input format for stdin content.
-         * 
-         * @param format The input format
-         * @return A [HasFromAndTo] state
-         */
-        fun from(format: InputFormat): HasFromAndTo = HasFromAndTo(
-            from = format,
-            to = to,
-            standalone = standalone,
-            template = template,
-            metadata = metadata,
-            variables = variables,
-            toc = toc,
-            tocDepth = tocDepth,
-            output = output
-        )
-        
         // Configuration setters
-        fun standalone(enabled: Boolean = true): HasStdinAndTo = copy(standalone = enabled)
-        fun template(file: String): HasStdinAndTo = copy(template = file)
-        fun output(file: String): HasStdinAndTo = copy(output = file)
-        fun metadata(key: String, value: String): HasStdinAndTo = copy(
-            metadata = metadata + (key to value)
-        )
-        fun variable(key: String, value: String): HasStdinAndTo = copy(
-            variables = variables + (key to value)
-        )
-        fun toc(depth: Int? = null): HasStdinAndTo = copy(toc = true, tocDepth = depth)
+        fun standalone(enabled: Boolean = true): Complete = copy(standalone = enabled)
+        fun template(file: String): Complete = copy(template = file)
+        fun output(file: String): Complete = copy(output = file)
+        fun metadata(key: String, value: String): Complete = copy(metadata = metadata + (key to value))
+        fun variable(key: String, value: String): Complete = copy(variables = variables + (key to value))
+        fun toc(depth: Int? = null): Complete = copy(toc = true, tocDepth = depth)
+        fun wrap(option: WrapOption): Complete = copy(wrap = option)
+        fun ascii(enabled: Boolean = true): Complete = copy(ascii = enabled)
+        fun numberSections(enabled: Boolean = true): Complete = copy(numberSections = enabled)
+        fun numberOffset(vararg offsets: Int): Complete = copy(numberOffset = offsets.toList())
+        fun topLevelDivision(division: TopLevelDivision): Complete = copy(topLevelDivision = division)
+        fun extractMedia(path: String): Complete = copy(extractMedia = path)
+        fun resourcePath(vararg paths: String): Complete = copy(resourcePath = paths.toList())
+        fun includeInHeader(file: String): Complete = copy(includeInHeader = (includeInHeader ?: emptyList()) + file)
+        fun includeBeforeBody(file: String): Complete = copy(includeBeforeBody = (includeBeforeBody ?: emptyList()) + file)
+        fun includeAfterBody(file: String): Complete = copy(includeAfterBody = (includeAfterBody ?: emptyList()) + file)
+        fun highlightStyle(style: String): Complete = copy(highlightStyle = style)
+        fun syntaxDefinition(file: String): Complete = copy(syntaxDefinition = file)
+        fun dpi(value: Int): Complete = copy(dpi = value)
+        fun eol(option: EOL): Complete = copy(eol = option)
+        fun columns(value: Int): Complete = copy(columns = value)
+        fun preserveTabs(enabled: Boolean = true): Complete = copy(preserveTabs = enabled)
+        fun tabStop(value: Int): Complete = copy(tabStop = value)
+        fun pdfEngine(engine: String): Complete = copy(pdfEngine = engine)
+        fun pdfEngineOpt(option: String): Complete = copy(pdfEngineOpt = (pdfEngineOpt ?: emptyList()) + option)
+        fun selfContained(enabled: Boolean = true): Complete = copy(selfContained = enabled)
+        fun embedResources(enabled: Boolean = true): Complete = copy(embedResources = enabled)
+        fun linkImages(enabled: Boolean = true): Complete = copy(linkImages = enabled)
+        fun requestHeader(name: String, value: String): Complete = copy(requestHeaders = (requestHeaders ?: emptyMap()) + (name to value))
+        fun noCheckCertificate(enabled: Boolean = true): Complete = copy(noCheckCertificate = enabled)
+        fun abbreviations(file: String): Complete = copy(abbreviations = file)
+        fun indentedCodeClasses(classes: String): Complete = copy(indentedCodeClasses = classes)
+        fun defaultImageExtension(extension: String): Complete = copy(defaultImageExtension = extension)
+        fun filter(program: String): Complete = copy(filters = (filters ?: emptyList()) + program)
+        fun luaFilter(script: String): Complete = copy(luaFilters = (luaFilters ?: emptyList()) + script)
+        fun shiftHeadingLevelBy(value: Int): Complete = copy(shiftHeadingLevelBy = value)
+        fun baseHeaderLevel(value: Int): Complete = copy(baseHeaderLevel = value)
+        fun trackChanges(mode: TrackChanges): Complete = copy(trackChanges = mode)
+        fun stripComments(enabled: Boolean = true): Complete = copy(stripComments = enabled)
+        fun referenceLinks(enabled: Boolean = true): Complete = copy(referenceLinks = enabled)
+        fun referenceLocation(location: ReferenceLocation): Complete = copy(referenceLocation = location)
+        fun figureCaptionPosition(position: CaptionPosition): Complete = copy(figureCaptionPosition = position)
+        fun tableCaptionPosition(position: CaptionPosition): Complete = copy(tableCaptionPosition = position)
+        fun markdownHeadings(style: MarkdownHeadingStyle): Complete = copy(markdownHeadings = style)
+        fun listTables(enabled: Boolean = true): Complete = copy(listTables = enabled)
+        fun listings(enabled: Boolean = true): Complete = copy(listings = enabled)
+        fun incremental(enabled: Boolean = true): Complete = copy(incremental = enabled)
+        fun slideLevel(value: Int): Complete = copy(slideLevel = value)
+        fun sectionDivs(enabled: Boolean = true): Complete = copy(sectionDivs = enabled)
+        fun htmlQTags(enabled: Boolean = true): Complete = copy(htmlQTags = enabled)
+        fun emailObfuscation(mode: EmailObfuscation): Complete = copy(emailObfuscation = mode)
+        fun idPrefix(prefix: String): Complete = copy(idPrefix = prefix)
+        fun titlePrefix(prefix: String): Complete = copy(titlePrefix = prefix)
+        fun css(url: String): Complete = copy(css = url)
+        fun citeproc(enabled: Boolean = true): Complete = copy(citeproc = enabled)
+        fun bibliography(file: String): Complete = copy(bibliography = file)
+        fun csl(file: String): Complete = copy(csl = file)
+        fun citationAbbreviations(file: String): Complete = copy(citationAbbreviations = file)
+        fun natbib(enabled: Boolean = true): Complete = copy(natbib = enabled)
+        fun biblatex(enabled: Boolean = true): Complete = copy(biblatex = enabled)
+        fun mathml(enabled: Boolean = true): Complete = copy(mathml = enabled)
+        fun webtex(url: String? = null): Complete = copy(webtex = url)
+        fun mathjax(url: String? = null): Complete = copy(mathjax = url)
+        fun katex(url: String? = null): Complete = copy(katex = url)
+        fun gladtex(enabled: Boolean = true): Complete = copy(gladtex = enabled)
+        fun trace(enabled: Boolean = true): Complete = copy(trace = enabled)
+        fun dumpArgs(enabled: Boolean = true): Complete = copy(dumpArgs = enabled)
+        fun ignoreArgs(enabled: Boolean = true): Complete = copy(ignoreArgs = enabled)
+        fun verbose(enabled: Boolean = true): Complete = copy(verbose = enabled)
+        fun quiet(enabled: Boolean = true): Complete = copy(quiet = enabled)
+        fun failIfWarnings(enabled: Boolean = true): Complete = copy(failIfWarnings = enabled)
+        fun log(file: String): Complete = copy(log = file)
         
-        // Terminal operations for stdin
+        // Terminal operations
         
-        /**
-         * Execute the pandoc command with the given content from stdin.
-         * 
-         * @param content The input content to convert
-         * @return The output from pandoc
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        fun execute(content: String): String = executeSync(content)
+        fun execute(): String = executeSync()
+        suspend fun executeAsync(): String = withContext(Dispatchers.IO) { executeSync() }
+        fun executeToFile(file: String) = executeToFileSync(file)
+        suspend fun executeToFileAsync(file: String) = withContext(Dispatchers.IO) { executeToFileSync(file) }
         
-        /**
-         * Execute the pandoc command asynchronously with the given content from stdin.
-         * 
-         * @param content The input content to convert
-         * @return The output from pandoc
-         * @throws PandocNotFoundException if pandoc is not installed
-         * @throws PandocExecutionException if pandoc execution fails
-         */
-        suspend fun executeAsync(content: String): String = withContext(Dispatchers.IO) {
-            executeSync(content)
-        }
-        
-        private fun executeSync(content: String): String {
+        private fun executeSync(): String {
             val command = buildCommandLine()
-            return runPandoc(command, content)
+            return runPandoc(command, inputSource)
         }
         
-        private fun buildCommandLine(): List<String> {
+        private fun executeToFileSync(file: String) {
+            val command = buildCommandLine(file)
+            runPandoc(command, inputSource)
+        }
+        
+        private fun buildCommandLine(outputFile: String? = null): List<String> {
             val args = mutableListOf<String>("pandoc")
             
-            from?.let { args.addAll(listOf("-f", it.value)) }
+            args.addAll(listOf("-f", from.value))
             args.addAll(listOf("-t", to.value))
+            outputFile?.let { args.addAll(listOf("-o", it)) }
             output?.let { args.addAll(listOf("-o", it)) }
             
             standalone?.let { if (it) args.add("--standalone") }
             template?.let { args.addAll(listOf("--template", it)) }
+            wrap?.let { args.addAll(listOf("--wrap", it.value)) }
+            ascii?.let { if (it) args.add("--ascii") }
             
             metadata.forEach { (key, value) ->
                 args.addAll(listOf("-M", "$key=$value"))
@@ -997,23 +832,90 @@ sealed class PandocCommand {
             
             toc?.let { if (it) args.add("--toc") }
             tocDepth?.let { args.addAll(listOf("--toc-depth", it.toString())) }
+            numberSections?.let { if (it) args.add("--number-sections") }
+            numberOffset?.let { args.addAll(listOf("--number-offset", it.joinToString(","))) }
+            topLevelDivision?.let { args.addAll(listOf("--top-level-division", it.value)) }
+            extractMedia?.let { args.addAll(listOf("--extract-media", it)) }
+            resourcePath?.let { args.addAll(it.flatMap { listOf("--resource-path", it) }) }
+            includeInHeader?.let { it.forEach { h -> args.addAll(listOf("--include-in-header", h)) } }
+            includeBeforeBody?.let { it.forEach { h -> args.addAll(listOf("--include-before-body", h)) } }
+            includeAfterBody?.let { it.forEach { h -> args.addAll(listOf("--include-after-body", h)) } }
+            highlightStyle?.let { args.addAll(listOf("--highlight-style", it)) }
+            syntaxDefinition?.let { args.addAll(listOf("--syntax-definition", it)) }
+            dpi?.let { args.addAll(listOf("--dpi", it.toString())) }
+            eol?.let { args.addAll(listOf("--eol", it.value)) }
+            columns?.let { args.addAll(listOf("--columns", it.toString())) }
+            preserveTabs?.let { if (it) args.add("--preserve-tabs") }
+            tabStop?.let { args.addAll(listOf("--tab-stop", it.toString())) }
+            pdfEngine?.let { args.addAll(listOf("--pdf-engine", it)) }
+            pdfEngineOpt?.let { it.forEach { opt -> args.addAll(listOf("--pdf-engine-opt", opt)) } }
+            selfContained?.let { if (it) args.add("--self-contained") }
+            embedResources?.let { if (it) args.add("--embed-resources") }
+            linkImages?.let { if (it) args.add("--link-images") }
+            requestHeaders?.let { it.forEach { (k, v) -> args.addAll(listOf("--request-header", "$k:$v")) } }
+            noCheckCertificate?.let { if (it) args.add("--no-check-certificate") }
+            abbreviations?.let { args.addAll(listOf("--abbreviations", it)) }
+            indentedCodeClasses?.let { args.addAll(listOf("--indented-code-classes", it)) }
+            defaultImageExtension?.let { args.addAll(listOf("--default-image-extension", it)) }
+            filters?.let { it.forEach { f -> args.addAll(listOf("--filter", f)) } }
+            luaFilters?.let { it.forEach { f -> args.addAll(listOf("--lua-filter", f)) } }
+            shiftHeadingLevelBy?.let { args.addAll(listOf("--shift-heading-level-by", it.toString())) }
+            baseHeaderLevel?.let { args.addAll(listOf("--base-header-level", it.toString())) }
+            trackChanges?.let { args.addAll(listOf("--track-changes", it.value)) }
+            stripComments?.let { if (it) args.add("--strip-comments") }
+            referenceLinks?.let { if (it) args.add("--reference-links") }
+            referenceLocation?.let { args.addAll(listOf("--reference-location", it.value)) }
+            figureCaptionPosition?.let { args.addAll(listOf("--figure-caption-position", it.value)) }
+            tableCaptionPosition?.let { args.addAll(listOf("--table-caption-position", it.value)) }
+            markdownHeadings?.let { args.addAll(listOf("--markdown-headings", it.value)) }
+            listTables?.let { if (it) args.add("--list-tables") }
+            listings?.let { if (it) args.add("--listings") }
+            incremental?.let { if (it) args.add("--incremental") }
+            slideLevel?.let { args.addAll(listOf("--slide-level", it.toString())) }
+            sectionDivs?.let { if (it) args.add("--section-divs") }
+            htmlQTags?.let { if (it) args.add("--html-q-tags") }
+            emailObfuscation?.let { args.addAll(listOf("--email-obfuscation", it.value)) }
+            idPrefix?.let { args.addAll(listOf("--id-prefix", it)) }
+            titlePrefix?.let { args.addAll(listOf("--title-prefix", it)) }
+            css?.let { args.addAll(listOf("--css", it)) }
+            citeproc?.let { if (it) args.add("--citeproc") }
+            bibliography?.let { args.addAll(listOf("--bibliography", it)) }
+            csl?.let { args.addAll(listOf("--csl", it)) }
+            citationAbbreviations?.let { args.addAll(listOf("--citation-abbreviations", it)) }
+            natbib?.let { if (it) args.add("--natbib") }
+            biblatex?.let { if (it) args.add("--biblatex") }
+            mathml?.let { if (it) args.add("--mathml") }
+            webtex?.let { args.addAll(listOf("--webtex", it)) }
+            mathjax?.let { args.addAll(listOf("--mathjax", it)) }
+            katex?.let { args.addAll(listOf("--katex", it)) }
+            gladtex?.let { if (it) args.add("--gladtex") }
+            trace?.let { if (it) args.add("--trace") }
+            dumpArgs?.let { if (it) args.add("--dump-args") }
+            ignoreArgs?.let { if (it) args.add("--ignore-args") }
+            verbose?.let { if (it) args.add("--verbose") }
+            quiet?.let { if (it) args.add("--quiet") }
+            failIfWarnings?.let { if (it) args.add("--fail-if-warnings") }
+            log?.let { args.addAll(listOf("--log", it)) }
             
-            // Read from stdin
-            args.add("-")
+            when (inputSource) {
+                is InputSource.Files -> args.addAll(inputSource.files)
+                is InputSource.StringInput -> args.add("-")
+            }
             
             return args
         }
         
-        private fun runPandoc(command: List<String>, content: String): String {
+        private fun runPandoc(command: List<String>, inputSource: InputSource): String {
             try {
                 val process = ProcessBuilder(command)
                     .redirectErrorStream(false)
                     .start()
                 
-                // Write content to stdin
-                process.outputStream.bufferedWriter().use { writer ->
-                    writer.write(content)
-                    writer.flush()
+                if (inputSource is InputSource.StringInput) {
+                    process.outputStream.bufferedWriter().use { writer ->
+                        writer.write(inputSource.content)
+                        writer.flush()
+                    }
                 }
                 
                 val stdout = process.inputStream.bufferedReader().readText()
@@ -1044,29 +946,29 @@ sealed class PandocCommand {
  * 
  * Example usage:
  * ```kotlin
- * // Simple conversion
+ * // Simple conversion from file
  * val html = Pandoc.convert()
  *     .from(InputFormat.MARKDOWN)
- *     .to(OutputFormat.HTML)
  *     .input("readme.md")
+ *     .to(OutputFormat.HTML)
  *     .standalone()
+ *     .execute()
+ * 
+ * // Simple conversion from string
+ * val html2 = Pandoc.convert()
+ *     .from(InputFormat.MARKDOWN)
+ *     .inputString("# Hello")
+ *     .to(OutputFormat.HTML)
  *     .execute()
  * 
  * // Async conversion
  * suspend fun convertAsync() {
  *     val result = Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
- *         .to(OutputFormat.PDF)
  *         .input("input.md")
- *         .output("output.pdf")
+ *         .to(OutputFormat.HTML)
  *         .executeAsync()
  * }
- * 
- * // String conversion via stdin
- * val html2 = Pandoc.convert()
- *     .fromStdin()
- *     .to(OutputFormat.HTML)
- *     .execute("# Hello World")
  * ```
  */
 object Pandoc {
@@ -1077,31 +979,4 @@ object Pandoc {
      * @return An [Incomplete] state ready for configuration
      */
     fun convert(): PandocCommand.Incomplete = PandocCommand.Incomplete()
-    
-    /**
-     * Convenience function for simple string-to-string conversion.
-     * 
-     * This is a shorthand for:
-     * ```kotlin
-     * Pandoc.convert()
-     *     .fromStdin()
-     *     .to(to)
-     *     .from(from)
-     *     .execute(content)
-     * ```
-     * 
-     * @param from The input format
-     * @param to The output format
-     * @param content The content to convert
-     * @param block Optional configuration block
-     * @return The converted content
-     */
-    suspend fun convertString(
-        from: InputFormat,
-        to: OutputFormat,
-        content: String,
-        block: PandocCommand.HasStdinAndTo.() -> PandocCommand.HasStdinAndTo = { this }
-    ): String {
-        return block(PandocCommand.HasStdinAndTo(to, from = from)).executeAsync(content)
-    }
 }

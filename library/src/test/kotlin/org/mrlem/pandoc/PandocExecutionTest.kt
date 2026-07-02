@@ -42,8 +42,8 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(mdFile)
+            .to(OutputFormat.HTML)
             .execute()
         
         assertTrue(html.contains("Hello World"))
@@ -58,8 +58,8 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(mdFile)
+            .to(OutputFormat.HTML)
             .standalone()
             .execute()
         
@@ -71,13 +71,14 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test string conversion via stdin`() {
+    fun `test string conversion via inputString`() {
         val markdown = "# Test Content\n\nParagraph text."
         
         val html = Pandoc.convert()
-            .fromStdin()
+            .from(InputFormat.MARKDOWN)
+            .inputString(markdown)
             .to(OutputFormat.HTML)
-            .execute(markdown)
+            .execute()
         
         assertTrue(html.contains("Test Content"))
         assertTrue(html.contains("Paragraph text"))
@@ -89,8 +90,8 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(mdFile)
+            .to(OutputFormat.HTML)
             .standalone()
             .metadata("title", "My Document")
             .execute()
@@ -105,8 +106,8 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(mdFile)
+            .to(OutputFormat.HTML)
             .toc(3)
             .standalone()
             .execute()
@@ -120,11 +121,11 @@ class PandocExecutionTest {
     fun `test async execution`() = runTest {
         val markdown = "# Async Test"
         
-        val html = Pandoc.convertString(
-            from = InputFormat.MARKDOWN,
-            to = OutputFormat.HTML,
-            content = markdown
-        )
+        val html = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputString(markdown)
+            .to(OutputFormat.HTML)
+            .executeAsync()
         
         assertTrue(html.contains("Async Test"))
     }
@@ -136,8 +137,8 @@ class PandocExecutionTest {
         
         Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(mdFile)
+            .to(OutputFormat.HTML)
             .standalone()
             .executeToFile(outputFile.absolutePath)
         
@@ -160,8 +161,8 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
             .input(file1, file2)
+            .to(OutputFormat.HTML)
             .execute()
         
         assertTrue(html.contains("File 1 Content"), "First file content should be present")

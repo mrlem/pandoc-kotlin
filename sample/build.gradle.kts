@@ -13,5 +13,5 @@ repositories {
 }
 
 dependencies {
-    implementation("org.mrlem.pandoc:pandoc-kt:0.1.0")
+    implementation(project(":library"))
 }

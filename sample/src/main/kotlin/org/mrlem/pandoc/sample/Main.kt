@@ -7,11 +7,7 @@ import org.mrlem.pandoc.enums.OutputFormat
 fun main() {
     val html = Pandoc.convert()
         .from(InputFormat.MARKDOWN)
-        .to(OutputFormat.HTML)
-        .fromStdin()
-        .standalone()
-        .toc(2)
-        .execute(
+        .inputString(
             """
                 # Sample file
                 
@@ -28,5 +24,9 @@ fun main() {
                 Lorem ipsum dolor sit amet.
             """.trimIndent()
         )
+        .to(OutputFormat.HTML)
+        .standalone()
+        .toc(2)
+        .execute()
     println("html: $html")
 }
