@@ -5,6 +5,7 @@
 package org.mrlem.pandoc
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -37,7 +38,7 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test markdown to html conversion with file input`() {
+    fun `test markdown to html conversion with file input`() = runTest {
         val mdFile = copyResourceToTemp("simple.md")
         
         val html = Pandoc.convert()
@@ -53,7 +54,7 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test markdown to html with standalone`() {
+    fun `test markdown to html with standalone`() = runTest {
         val mdFile = copyResourceToTemp("standalone.md")
         
         val html = Pandoc.convert()
@@ -71,7 +72,7 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test string conversion via inputString`() {
+    fun `test string conversion via inputString`() = runTest {
         val markdown = "# Test Content\n\nParagraph text."
         
         val html = Pandoc.convert()
@@ -85,7 +86,7 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test with metadata`() {
+    fun `test with metadata`() = runTest {
         val mdFile = copyResourceToTemp("standalone.md")
         
         val html = Pandoc.convert()
@@ -101,7 +102,7 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test with table of contents`() {
+    fun `test with table of contents`() = runTest {
         val mdFile = copyResourceToTemp("with-toc.md")
         
         val html = Pandoc.convert()
@@ -125,27 +126,13 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputString(markdown)
             .to(OutputFormat.HTML)
-            .outputStringAsync()
+            .outputString()
         
         assertTrue(html.contains("Async Test"))
     }
     
     @Test
-    fun `test inputStream conversion`() = runTest {
-        val markdown = "# Stream Test"
-        val stream = ByteArrayInputStream(markdown.toByteArray())
-        
-        val html = Pandoc.convert()
-            .from(InputFormat.MARKDOWN)
-            .inputStream(stream)
-            .to(OutputFormat.HTML)
-            .outputStringAsync()
-        
-        assertTrue(html.contains("Stream Test"))
-    }
-    
-    @Test
-    fun `test output to file`() {
+    fun `test output to file`() = runTest {
         val mdFile = copyResourceToTemp("simple.md", "input.md")
         val outputFile = tempDir.resolve("output.html").toFile()
         
@@ -163,13 +150,27 @@ class PandocExecutionTest {
     }
     
     @Test
+    fun `test inputStream conversion`() = runTest {
+        val markdown = "# Stream Test"
+        val stream = ByteArrayInputStream(markdown.toByteArray())
+        
+        val html = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputStream(stream)
+            .to(OutputFormat.HTML)
+            .outputString()
+        
+        assertTrue(html.contains("Stream Test"))
+    }
+    
+    @Test
     fun `test to string conversion`() = runTest {
         val html = "# HTML Test".markdownToHtml()
         assertTrue(html.contains("HTML Test"))
     }
     
     @Test
-    fun `test input with multiple files`() {
+    fun `test input with multiple files`() = runTest {
         val file1 = copyResourceToTemp("multiple.md", "file1.md")
         val file2 = copyResourceToTemp("multiple2.md", "file2.md")
         

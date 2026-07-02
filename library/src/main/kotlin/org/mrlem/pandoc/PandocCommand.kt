@@ -53,7 +53,7 @@ sealed class InputSource {
  * - [NeedsTo]: Input format and source set, needs output format
  * - [Complete]: All required fields set, ready for execution
  * 
- * Only the [Complete] state has terminal operations like [outputString], [outputStringAsync], [outputFile], [outputFileAsync].
+ * Only the [Complete] state has terminal operations like [outputString] and [outputFile].
  */
 sealed class PandocCommand {
     
@@ -719,7 +719,7 @@ sealed class PandocCommand {
     /**
      * Complete state with all required fields set (input format, input source, output format).
      * 
-     * This state has all terminal operations ([outputString], [outputStringAsync], [outputFile], [outputFileAsync]).
+     * This state has all terminal operations ([outputString], [outputFile]).
      */
     @PandocDsl
     data class Complete internal constructor(
@@ -875,17 +875,12 @@ sealed class PandocCommand {
         
         // Terminal operations
         
-        fun outputString(): String = outputStringSync()
-        suspend fun outputStringAsync(): String = withContext(Dispatchers.IO) { outputStringSync() }
-        fun outputFile(file: String) = outputFileSync(file)
-        suspend fun outputFileAsync(file: String) = withContext(Dispatchers.IO) { outputFileSync(file) }
-        
-        private fun outputStringSync(): String {
+        suspend fun outputString(): String = withContext(Dispatchers.IO) {
             val command = buildCommandLine()
-            return runPandoc(command, inputSource)
+            runPandoc(command, inputSource)
         }
         
-        private fun outputFileSync(file: String) {
+        suspend fun outputFile(file: String) = withContext(Dispatchers.IO) {
             val command = buildCommandLine(file)
             runPandoc(command, inputSource)
         }
@@ -1039,41 +1034,34 @@ sealed class PandocCommand {
  * Example usage:
  * ```kotlin
  * // Simple conversion from file to String
- * val html = Pandoc.convert()
- *     .from(InputFormat.MARKDOWN)
- *     .inputFile("readme.md")
- *     .to(OutputFormat.HTML)
- *     .standalone()
- *     .outputString()
+ * suspend fun example() {
+ *     val html: String = Pandoc.convert()
+ *         .from(InputFormat.MARKDOWN)
+ *         .inputFile("readme.md")
+ *         .to(OutputFormat.HTML)
+ *         .standalone()
+ *         .outputString()
  * 
- * // Simple conversion from string to String
- * val html2 = Pandoc.convert()
- *     .from(InputFormat.MARKDOWN)
- *     .inputString("# Hello")
- *     .to(OutputFormat.HTML)
- *     .outputString()
+ *     // Simple conversion from string to String
+ *     val html2: String = Pandoc.convert()
+ *         .from(InputFormat.MARKDOWN)
+ *         .inputString("# Hello")
+ *         .to(OutputFormat.HTML)
+ *         .outputString()
  * 
- * // Conversion from InputStream to String
- * val html3 = Pandoc.convert()
- *     .from(InputFormat.MARKDOWN)
- *     .inputStream(inputStream)
- *     .to(OutputFormat.HTML)
- *     .outputString()
+ *     // Conversion from InputStream to String
+ *     val html3: String = Pandoc.convert()
+ *         .from(InputFormat.MARKDOWN)
+ *         .inputStream(inputStream)
+ *         .to(OutputFormat.HTML)
+ *         .outputString()
  * 
- * // Conversion to file
- * Pandoc.convert()
- *     .from(InputFormat.MARKDOWN)
- *     .inputFile("input.md")
- *     .to(OutputFormat.HTML)
- *     .outputFile("output.html")
- * 
- * // Async conversion to String
- * suspend fun convertAsync() {
- *     val result = Pandoc.convert()
+ *     // Conversion to file
+ *     Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
  *         .inputFile("input.md")
  *         .to(OutputFormat.HTML)
- *         .outputStringAsync()
+ *         .outputFile("output.html")
  * }
  * ```
  */

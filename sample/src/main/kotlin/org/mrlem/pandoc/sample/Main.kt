@@ -3,8 +3,9 @@ package org.mrlem.pandoc.sample
 import org.mrlem.pandoc.Pandoc
 import org.mrlem.pandoc.enums.InputFormat
 import org.mrlem.pandoc.enums.OutputFormat
+import kotlinx.coroutines.runBlocking
 
-fun main() {
+fun main() = runBlocking {
     val html = Pandoc.convert()
         .from(InputFormat.MARKDOWN)
         .inputString(

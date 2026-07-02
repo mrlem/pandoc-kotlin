@@ -14,4 +14,5 @@ repositories {
 
 dependencies {
     implementation(project(":library"))
+    implementation(libs.kotlinx.coroutines.core)
 }
