@@ -14,8 +14,8 @@ import org.mrlem.pandoc.enums.OutputFormat
 import org.mrlem.pandoc.extensions.convertTo
 import org.mrlem.pandoc.extensions.markdownToHtml
 import org.mrlem.pandoc.extensions.toHtml
-import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.StringReader
 import java.nio.file.Path
 
 class PandocExecutionTest {
@@ -150,17 +150,17 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test inputStream conversion`() = runTest {
-        val markdown = "# Stream Test"
-        val stream = ByteArrayInputStream(markdown.toByteArray())
+    fun `test inputReader conversion`() = runTest {
+        val markdown = "# Reader Test"
+        val reader = StringReader(markdown)
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .inputStream(stream)
+            .inputReader(reader)
             .to(OutputFormat.HTML)
             .outputString()
         
-        assertTrue(html.contains("Stream Test"))
+        assertTrue(html.contains("Reader Test"))
     }
     
     @Test

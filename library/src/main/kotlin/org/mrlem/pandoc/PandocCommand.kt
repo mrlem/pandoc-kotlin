@@ -22,7 +22,7 @@ import org.mrlem.pandoc.enums.WrapOption
 import org.mrlem.pandoc.exceptions.PandocExecutionException
 import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import java.io.File
-import java.io.InputStream
+import java.io.Reader
 import java.nio.file.Path
 
 /**
@@ -39,8 +39,8 @@ sealed class InputSource {
     data class Files(val files: List<String>) : InputSource()
     /** Input from a string (passed via stdin). */
     data class StringInput(val content: String) : InputSource()
-    /** Input from an InputStream (passed via stdin). */
-    data class StreamInput(val stream: InputStream) : InputSource()
+    /** Input from a Reader (passed via stdin). */
+    data class ReaderInput(val reader: Reader) : InputSource()
 }
 
 /**
@@ -247,9 +247,9 @@ sealed class PandocCommand {
         fun inputFiles(vararg files: File): NeedsTo = inputFiles(*files.map { it.absolutePath }.toTypedArray())
         fun inputFiles(vararg files: Path): NeedsTo = inputFiles(*files.map { it.toString() }.toTypedArray())
         
-        fun inputStream(stream: InputStream): NeedsTo = NeedsTo(
+        fun inputReader(reader: Reader): NeedsTo = NeedsTo(
             from = from,
-            inputSource = InputSource.StreamInput(stream),
+            inputSource = InputSource.ReaderInput(reader),
             standalone = standalone,
             template = template,
             metadata = metadata,
@@ -974,7 +974,7 @@ sealed class PandocCommand {
             when (inputSource) {
                 is InputSource.Files -> args.addAll(inputSource.files)
                 is InputSource.StringInput -> args.add("-")
-                is InputSource.StreamInput -> args.add("-")
+                is InputSource.ReaderInput -> args.add("-")
             }
             
             return args
@@ -993,10 +993,10 @@ sealed class PandocCommand {
                             writer.flush()
                         }
                     }
-                    is InputSource.StreamInput -> {
-                        process.outputStream.use { output ->
-                            inputSource.stream.use { input ->
-                                input.copyTo(output)
+                    is InputSource.ReaderInput -> {
+                        process.outputStream.bufferedWriter().use { writer ->
+                            inputSource.reader.use { reader ->
+                                reader.copyTo(writer)
                             }
                         }
                     }
@@ -1049,10 +1049,10 @@ sealed class PandocCommand {
  *         .to(OutputFormat.HTML)
  *         .outputString()
  * 
- *     // Conversion from InputStream to String
+ *     // Conversion from Reader to String
  *     val html3: String = Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
- *         .inputStream(inputStream)
+ *         .inputReader(reader)
  *         .to(OutputFormat.HTML)
  *         .outputString()
  * 
