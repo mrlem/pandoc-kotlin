@@ -31,8 +31,9 @@ annotation class PandocDsl
  * - [HasFrom]: Input format set, needs output format
  * - [HasInput]: Input files set, needs output format
  * - [NeedsInput]: Output format set, needs input
+ * - [NeedsInputSource]: Input and output formats set, needs input source (files or stdin)
  * - [NeedsTo]: Input method set (stdin), needs output format
- * - [HasFromAndTo]: Complete - has input format and output format
+ * - [HasFromAndTo]: Complete - has input format, output format, and input files
  * - [HasInputAndTo]: Complete - has input files and output format
  * - [HasStdinAndTo]: Complete - has stdin input and output format
  * 
@@ -492,7 +493,7 @@ sealed class PandocCommand {
     // ========================================================================
     
     /**
-     * Complete state with input format, output format, and optional configuration.
+     * Complete state with input format, output format, input files, and optional configuration.
      * 
      * This state has all terminal operations ([execute], [executeAsync], [flow]).
      */
