@@ -113,36 +113,7 @@ Pandoc.convert()
 
 ## Compile-Time Safety
 
-The library uses Kotlin's sealed class hierarchy to provide compile-time validation:
-
-### Compiles ✅
-
-```kotlin
-Pandoc.convert()
-    .from(InputFormat.MARKDOWN)
-    .to(OutputFormat.HTML)
-    .input("readme.md")
-    .execute()
-```
-
-### Won't Compile ❌
-
-```kotlin
-// Missing 'from' and 'to'
-Pandoc.convert().execute()  // Compile error: Incomplete has no execute()
-
-// Missing 'to'
-Pandoc.convert().from(InputFormat.MARKDOWN).execute()  // Compile error
-
-// Missing 'from' or 'input'
-Pandoc.convert().to(OutputFormat.HTML).execute()  // Compile error
-
-// Missing input source (files or stdin) after specifying from and to
-Pandoc.convert().from(InputFormat.MARKDOWN).to(OutputFormat.HTML).execute()  // Compile error
-
-// Missing 'to' for stdin
-Pandoc.convert().fromStdin().execute("content")  // Compile error
-```
+The library uses Kotlin's sealed class hierarchy to provide compile-time validation.
 
 ## Error Handling
 
