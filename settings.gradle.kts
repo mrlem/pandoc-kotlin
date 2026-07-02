@@ -1,4 +1,4 @@
-rootProject.name = "pandoc-kt"
+rootProject.name = "Pandoc Kotlin"
 
 include(
     "library",
