@@ -16,6 +16,7 @@ import org.mrlem.pandoc.extensions.markdownToHtml
 import org.mrlem.pandoc.extensions.toHtml
 import java.io.File
 import java.io.StringReader
+import java.io.StringWriter
 import java.nio.file.Path
 
 class PandocExecutionTest {
@@ -202,5 +203,37 @@ class PandocExecutionTest {
         
         val html = mdFile.toPath().toHtml()
         assertTrue(html.contains("Hello World"))
+    }
+
+    @Test
+    fun `test outputWriter conversion`() = runTest {
+        val markdown = "# Writer Test\n\nContent via writer"
+        val writer = StringWriter()
+        
+        Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputString(markdown)
+            .to(OutputFormat.HTML)
+            .outputWriter(writer)
+        
+        val result = writer.toString()
+        assertTrue(result.contains("Writer Test"), "Output should contain title")
+        assertTrue(result.contains("Content via writer"), "Output should contain content")
+    }
+
+    @Test
+    fun `test outputWriter with inputReader`() = runTest {
+        val markdown = "# Reader to Writer Test"
+        val reader = StringReader(markdown)
+        val writer = StringWriter()
+        
+        Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputReader(reader)
+            .to(OutputFormat.HTML)
+            .outputWriter(writer)
+        
+        val result = writer.toString()
+        assertTrue(result.contains("Reader to Writer Test"))
     }
 }

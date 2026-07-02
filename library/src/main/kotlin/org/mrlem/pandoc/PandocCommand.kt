@@ -23,6 +23,7 @@ import org.mrlem.pandoc.exceptions.PandocExecutionException
 import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import java.io.File
 import java.io.Reader
+import java.io.Writer
 import java.nio.file.Path
 
 /**
@@ -53,7 +54,7 @@ sealed class InputSource {
  * - [NeedsTo]: Input format and source set, needs output format
  * - [Complete]: All required fields set, ready for execution
  * 
- * Only the [Complete] state has terminal operations like [outputString] and [outputFile].
+ * Only the [Complete] state has terminal operations like [outputString], [outputFile], and [outputWriter].
  */
 sealed class PandocCommand {
     
@@ -719,7 +720,7 @@ sealed class PandocCommand {
     /**
      * Complete state with all required fields set (input format, input source, output format).
      * 
-     * This state has all terminal operations ([outputString], [outputFile]).
+     * This state has all terminal operations ([outputString], [outputFile], [outputWriter]).
      */
     @PandocDsl
     data class Complete internal constructor(
@@ -885,6 +886,11 @@ sealed class PandocCommand {
             runPandoc(command, inputSource)
         }
         
+        suspend fun outputWriter(writer: Writer) = withContext(Dispatchers.IO) {
+            val command = buildCommandLine()
+            runPandoc(command, inputSource, writer)
+        }
+        
         private fun buildCommandLine(outputFile: String? = null): List<String> {
             val args = mutableListOf<String>("pandoc")
             
@@ -1025,6 +1031,55 @@ sealed class PandocCommand {
                 throw PandocNotFoundException("Failed to execute pandoc", e)
             }
         }
+        
+        private fun runPandoc(command: List<String>, inputSource: InputSource, writer: Writer) {
+            try {
+                val process = ProcessBuilder(command)
+                    .redirectErrorStream(false)
+                    .start()
+                
+                // Write input to stdin
+                when (inputSource) {
+                    is InputSource.StringInput -> {
+                        process.outputStream.bufferedWriter().use { w ->
+                            w.write(inputSource.content)
+                            w.flush()
+                        }
+                    }
+                    is InputSource.ReaderInput -> {
+                        process.outputStream.bufferedWriter().use { w ->
+                            inputSource.reader.use { reader ->
+                                reader.copyTo(w)
+                            }
+                        }
+                    }
+                    is InputSource.Files -> {
+                        // Files are passed as arguments, no stdin needed
+                    }
+                }
+                
+                // Read stdout and write to the provided Writer
+                process.inputStream.bufferedReader().use { reader ->
+                    reader.copyTo(writer)
+                }
+                
+                val stderr = process.errorStream.bufferedReader().readText()
+                val exitCode = process.waitFor()
+                
+                if (exitCode != 0) {
+                    throw PandocExecutionException(
+                        message = "Pandoc execution failed with exit code $exitCode",
+                        exitCode = exitCode,
+                        command = command,
+                        stdout = "",
+                        stderr = stderr
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is PandocExecutionException) throw e
+                throw PandocNotFoundException("Failed to execute pandoc", e)
+            }
+        }
     }
 }
 
@@ -1062,6 +1117,14 @@ sealed class PandocCommand {
  *         .inputFile("input.md")
  *         .to(OutputFormat.HTML)
  *         .outputFile("output.html")
+ * 
+ *     // Conversion to Writer
+ *     val writer = java.io.StringWriter()
+ *     Pandoc.convert()
+ *         .from(InputFormat.MARKDOWN)
+ *         .inputReader(reader)
+ *         .to(OutputFormat.HTML)
+ *         .outputWriter(writer)
  * }
  * ```
  */

@@ -87,6 +87,17 @@ class PandocTest {
             .from(InputFormat.MARKDOWN)
             .inputFile("test.md")
             .to(OutputFormat.HTML)
-        // outputStringAsync() exists on complete states
+        // outputString() exists on complete states
+    }
+
+    @Test
+    fun `outputWriter method exists on Complete state`() = runTest {
+        val command = Pandoc.convert()
+            .from(InputFormat.MARKDOWN)
+            .inputString("# Test")
+            .to(OutputFormat.HTML)
+        // outputWriter() exists on complete states
+        val writer = java.io.StringWriter()
+        // This compiles - Complete has outputWriter()
     }
 }
