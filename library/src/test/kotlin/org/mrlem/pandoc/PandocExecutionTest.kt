@@ -148,23 +148,6 @@ class PandocExecutionTest {
     }
     
     @Test
-    fun `test flow execution`() = runTest {
-        val markdown = "# Flow Test"
-        
-        val results = mutableListOf<String>()
-        Pandoc.convert()
-            .fromStdin()
-            .to(OutputFormat.HTML)
-            .flow(markdown)
-            .collect { html ->
-                results.add(html)
-            }
-        
-        assertEquals(1, results.size, "Flow should emit one result")
-        assertTrue(results[0].contains("Flow Test"), "Result should contain input content")
-    }
-    
-    @Test
     fun `test to string conversion`() = runTest {
         val html = "# HTML Test".markdownToHtml()
         assertTrue(html.contains("HTML Test"))

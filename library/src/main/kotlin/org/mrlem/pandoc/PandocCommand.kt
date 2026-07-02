@@ -11,8 +11,6 @@ import org.mrlem.pandoc.enums.*
 import org.mrlem.pandoc.exceptions.PandocExecutionException
 import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Path
@@ -38,7 +36,7 @@ annotation class PandocDsl
  * - [HasStdinAndTo]: Complete - has stdin input and output format
  * 
  * Only complete states (HasFromAndTo, HasInputAndTo, HasStdinAndTo) have
- * terminal operations like [execute], [executeAsync], and [flow].
+ * terminal operations like [execute] and [executeAsync].
  */
 sealed class PandocCommand {
     
@@ -495,7 +493,7 @@ sealed class PandocCommand {
     /**
      * Complete state with input format, output format, input files, and optional configuration.
      * 
-     * This state has all terminal operations ([execute], [executeAsync], [flow]).
+     * This state has all terminal operations ([execute], [executeAsync]).
      */
     @PandocDsl
     
@@ -703,15 +701,6 @@ sealed class PandocCommand {
         }
         
         /**
-         * Execute the pandoc command and return a Flow.
-         * 
-         * @return A Flow that emits the output from pandoc
-         */
-        fun flow(): Flow<String> = flow {
-            emit(executeSync())
-        }
-        
-        /**
          * Execute the pandoc command and write output to a file.
          * 
          * @param file The output file path
@@ -810,7 +799,7 @@ sealed class PandocCommand {
     /**
      * Complete state with input files, output format, and optional configuration.
      * 
-     * This state has all terminal operations ([execute], [executeAsync], [flow]).
+     * This state has all terminal operations ([execute], [executeAsync]).
      */
     @PandocDsl
     
@@ -841,7 +830,6 @@ sealed class PandocCommand {
         // Terminal operations
         fun execute(): String = executeSync()
         suspend fun executeAsync(): String = withContext(Dispatchers.IO) { executeSync() }
-        fun flow(): Flow<String> = flow { emit(executeSync()) }
         fun executeToFile(file: String) = executeToFileSync(file)
         suspend fun executeToFileAsync(file: String) = withContext(Dispatchers.IO) { executeToFileSync(file) }
         
@@ -985,16 +973,6 @@ sealed class PandocCommand {
             executeSync(content)
         }
         
-        /**
-         * Execute the pandoc command with the given content and return a Flow.
-         * 
-         * @param content The input content to convert
-         * @return A Flow that emits the output from pandoc
-         */
-        fun flow(content: String): Flow<String> = flow {
-            emit(executeSync(content))
-        }
-        
         private fun executeSync(content: String): String {
             val command = buildCommandLine()
             return runPandoc(command, content)
@@ -1089,14 +1067,6 @@ sealed class PandocCommand {
  *     .fromStdin()
  *     .to(OutputFormat.HTML)
  *     .execute("# Hello World")
- * 
- * // Using Flow
- * Pandoc.convert()
- *     .from(InputFormat.MARKDOWN)
- *     .to(OutputFormat.HTML)
- *     .input("input.md")
- *     .flow()
- *     .collect { html -> println(html) }
  * ```
  */
 object Pandoc {

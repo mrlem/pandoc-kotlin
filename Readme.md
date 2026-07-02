@@ -7,7 +7,7 @@ A Kotlin library to convert documents between a variety of file formats, using P
 - **Fluent API**: Intuitive, chainable method calls for building pandoc commands
 - **Type-Safe**: Strongly typed enums for all pandoc formats and options
 - **Compile-Time Safety**: State-encoded builder pattern ensures required fields are set before execution
-- **Coroutine Support**: Async operations with `suspend` functions and Kotlin Flow
+- **Coroutine Support**: Async operations with `suspend` functions
 - **Comprehensive**: Supports 100+ pandoc options
 
 ## Installation
@@ -58,21 +58,6 @@ suspend fun convertString() {
         content = "# Hello World"
     )
 }
-```
-
-### Using Flow
-
-```kotlin
-import kotlinx.coroutines.flow.collect
-
-Pandoc.convert()
-    .from(InputFormat.MARKDOWN)
-    .to(OutputFormat.HTML)
-    .input("input.md")
-    .flow()
-    .collect { html ->
-        println(html)
-    }
 ```
 
 ## Fluent API

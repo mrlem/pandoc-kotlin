@@ -95,15 +95,6 @@ class PandocTest {
     }
     
     @Test
-    fun `flow execution methods exist`() = runTest {
-        val command = Pandoc.convert()
-            .from(InputFormat.MARKDOWN)
-            .to(OutputFormat.HTML)
-            .input("test.md")
-        // flow() exists on complete states
-    }
-    
-    @Test
     fun `convertString convenience function exists`() = runTest {
         // convertString() convenience function exists
     }

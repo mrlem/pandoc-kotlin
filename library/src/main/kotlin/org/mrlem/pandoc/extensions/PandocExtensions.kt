@@ -6,10 +6,6 @@ package org.mrlem.pandoc.extensions
 import org.mrlem.pandoc.Pandoc
 import org.mrlem.pandoc.enums.InputFormat
 import org.mrlem.pandoc.enums.OutputFormat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import java.io.File
 import java.nio.file.Path
 
@@ -89,31 +85,3 @@ suspend fun Path.toHtml(): String = this.toFile().toHtml()
  * @return The converted content as a string
  */
 suspend fun Path.convertTo(to: OutputFormat): String = this.toFile().convertTo(to)
-
-/**
- * Convert a Flow of strings (Markdown) to a Flow of HTML strings.
- * 
- * Note: Each element is converted on Dispatchers.IO.
- * 
- * @return A Flow of HTML strings
- */
-fun Flow<String>.markdownToHtml(): Flow<String> = flow {
-    collect { markdown ->
-        emit(markdown.markdownToHtml())
-    }
-}.flowOn(Dispatchers.IO)
-
-/**
- * Convert a Flow of strings from one format to another.
- * 
- * Note: Each element is converted on Dispatchers.IO.
- * 
- * @param from The input format
- * @param to The output format
- * @return A Flow of converted strings
- */
-fun Flow<String>.convert(from: InputFormat, to: OutputFormat): Flow<String> = flow {
-    collect { content ->
-        emit(content.convert(from, to))
-    }
-}.flowOn(Dispatchers.IO)
