@@ -1,40 +1,39 @@
 plugins {
     kotlin("jvm")
     `java-library`
-    `maven-publish`
+    alias(libs.plugins.maven.publish)
 }
 
-group = "org.mrlem.pandoc"
-version = "0.1.0"
+mavenPublishing {
+    publishToMavenCentral()
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = "pandoc-kt"
-            version = project.version as String
-
-            from(components["java"])
-
-            pom {
-                name.set("pandoc-kt")
-                description.set("A Kotlin library for using Pandoc with a fluent, type-safe API")
-                url.set("https://github.com/mrlem/pandoc-kt")
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("mrlem")
-                        name.set("Sebastien Guillemin")
-                    }
-                }
+    coordinates("org.mrlem.pandoc", "pandoc-kotlin", "0.1.0")
+    pom {
+        name.set("Pandoc Kotlin library")
+        description.set("A Kotlin library for using Pandoc with a fluent, type-safe API")
+        inceptionYear.set("2026")
+        url.set("https://github.com/mrlem/pandoc-kotlin")
+        licenses {
+            license {
+                name.set("GNU General Public License, version 3.0")
+                url.set("https://www.gnu.org/licenses/gpl-3.0.html")
+                distribution.set("https://www.gnu.org/licenses/gpl-3.0.txt")
             }
         }
+        developers {
+            developer {
+                id.set("mrlem")
+                name.set("Sébastien Guillemin")
+                url.set("https://github.com/mrlem")
+            }
+        }
+        scm {
+            url.set("https://github.com/mrlem/pandoc-kotlin")
+            connection.set("scm:git:git://github.com/mrlem/pandoc-kotlin.git")
+            developerConnection.set("scm:git:ssh://git@github.com/mrlem/pandoc-kotlin.git")
+        }
     }
+
     repositories {
         mavenLocal()
     }
@@ -66,4 +65,6 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get().toInt()))
     }
+
+    withSourcesJar()
 }

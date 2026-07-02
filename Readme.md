@@ -15,7 +15,7 @@ A Kotlin library to convert documents between a variety of file formats, using P
 Add to your `build.gradle.kts`:
 
 ```kotlin
-implementation("org.mrlem.pandoc:pandoc-kt:0.1.0")
+implementation("org.mrlem.pandoc:pandoc-kotlin:0.1.0")
 ```
 
 ## Quick Start
