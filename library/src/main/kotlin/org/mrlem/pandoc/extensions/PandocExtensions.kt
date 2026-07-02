@@ -18,7 +18,7 @@ suspend fun File.toHtml(): String = Pandoc.convert()
     .from(InputFormat.MARKDOWN)
     .inputString(this.readText())
     .to(OutputFormat.HTML)
-    .executeAsync()
+    .outputStringAsync()
 
 /**
  * Convert this File to the specified output format.
@@ -30,7 +30,7 @@ suspend fun File.convertTo(to: OutputFormat): String = Pandoc.convert()
     .from(InputFormat.MARKDOWN)
     .inputString(this.readText())
     .to(to)
-    .executeAsync()
+    .outputStringAsync()
 
 /**
  * Convert this File to the specified output format and write to another file.
@@ -39,12 +39,11 @@ suspend fun File.convertTo(to: OutputFormat): String = Pandoc.convert()
  * @param outputFile The output file
  */
 suspend fun File.convertTo(to: OutputFormat, outputFile: File) {
-    val content = Pandoc.convert()
+    Pandoc.convert()
         .from(InputFormat.MARKDOWN)
         .inputString(this.readText())
         .to(to)
-        .executeAsync()
-    outputFile.writeText(content)
+        .outputFileAsync(outputFile.absolutePath)
 }
 
 /**
@@ -56,7 +55,7 @@ suspend fun String.markdownToHtml(): String = Pandoc.convert()
     .from(InputFormat.MARKDOWN)
     .inputString(this)
     .to(OutputFormat.HTML)
-    .executeAsync()
+    .outputStringAsync()
 
 /**
  * Convert this String from the specified input format to the specified output format.
@@ -69,7 +68,7 @@ suspend fun String.convert(from: InputFormat, to: OutputFormat): String = Pandoc
     .from(from)
     .inputString(this)
     .to(to)
-    .executeAsync()
+    .outputStringAsync()
 
 /**
  * Convert this Path from Markdown to HTML.

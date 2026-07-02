@@ -2,7 +2,7 @@
  * Tests for compile-time safety of the Pandoc fluent API.
  * 
  * These tests verify that the state-encoded builder pattern works correctly:
- * - Incomplete states don't have execute() methods
+ * - Incomplete states don't have output methods
  * - Complete states have all terminal operations
  */
 package org.mrlem.pandoc
@@ -15,46 +15,46 @@ import org.junit.jupiter.api.Test
 class PandocTest {
     
     @Test
-    fun `compile-time safety - Incomplete state does not have execute`() {
-        // This test verifies that Incomplete doesn't have execute()
+    fun `compile-time safety - Incomplete state does not have output methods`() {
+        // This test verifies that Incomplete doesn't have outputString()
         val command = Pandoc.convert()
-        // The following would not compile: command.execute()
+        // The following would not compile: command.outputString()
     }
     
     @Test
-    fun `compile-time safety - HasFrom state does not have execute`() {
+    fun `compile-time safety - HasFrom state does not have output methods`() {
         val command = Pandoc.convert().from(InputFormat.MARKDOWN)
-        // The following would not compile: command.execute()
+        // The following would not compile: command.outputString()
     }
     
     @Test
-    fun `compile-time safety - NeedsTo state does not have execute`() {
+    fun `compile-time safety - NeedsTo state does not have output methods`() {
         val command = Pandoc.convert().from(InputFormat.MARKDOWN).inputFile("test.md")
-        // The following would not compile: command.execute()
+        // The following would not compile: command.outputString()
     }
     
     @Test
-    fun `compile-time safety - NeedsTo state with inputString does not have execute`() {
+    fun `compile-time safety - NeedsTo state with inputString does not have output methods`() {
         val command = Pandoc.convert().from(InputFormat.MARKDOWN).inputString("# Hello")
-        // The following would not compile: command.execute()
+        // The following would not compile: command.outputString()
     }
     
     @Test
-    fun `Complete state with file input has execute`() {
+    fun `Complete state with file input has output methods`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .inputFile("test.md")
             .to(OutputFormat.HTML)
-        // This compiles - Complete has execute()
+        // This compiles - Complete has outputString()
     }
     
     @Test
-    fun `Complete state with string input has execute`() {
+    fun `Complete state with string input has output methods`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .inputString("# Hello")
             .to(OutputFormat.HTML)
-        // This compiles - Complete has execute()
+        // This compiles - Complete has outputString()
     }
     
     @Test
@@ -82,11 +82,11 @@ class PandocTest {
     }
     
     @Test
-    fun `async execution methods exist`() = runTest {
+    fun `async output methods exist`() = runTest {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
             .inputFile("test.md")
             .to(OutputFormat.HTML)
-        // executeAsync() exists on complete states
+        // outputStringAsync() exists on complete states
     }
 }

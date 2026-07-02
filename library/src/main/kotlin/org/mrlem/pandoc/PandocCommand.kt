@@ -53,7 +53,7 @@ sealed class InputSource {
  * - [NeedsTo]: Input format and source set, needs output format
  * - [Complete]: All required fields set, ready for execution
  * 
- * Only the [Complete] state has terminal operations like [execute] and [executeAsync].
+ * Only the [Complete] state has terminal operations like [outputString], [outputStringAsync], [outputFile], [outputFileAsync].
  */
 sealed class PandocCommand {
     
@@ -94,7 +94,6 @@ sealed class PandocCommand {
         val variables: Map<String, String> = emptyMap(),
         val toc: Boolean? = null,
         val tocDepth: Int? = null,
-        val output: String? = null,
         val wrap: WrapOption? = null,
         val ascii: Boolean? = null,
         val numberSections: Boolean? = null,
@@ -174,7 +173,6 @@ sealed class PandocCommand {
             variables = variables,
             toc = toc,
             tocDepth = tocDepth,
-            output = output,
             wrap = wrap,
             ascii = ascii,
             numberSections = numberSections,
@@ -258,7 +256,6 @@ sealed class PandocCommand {
             variables = variables,
             toc = toc,
             tocDepth = tocDepth,
-            output = output,
             wrap = wrap,
             ascii = ascii,
             numberSections = numberSections,
@@ -336,7 +333,6 @@ sealed class PandocCommand {
             variables = variables,
             toc = toc,
             tocDepth = tocDepth,
-            output = output,
             wrap = wrap,
             ascii = ascii,
             numberSections = numberSections,
@@ -411,7 +407,6 @@ sealed class PandocCommand {
         fun metadata(key: String, value: String): HasFrom = copy(metadata = metadata + (key to value))
         fun variable(key: String, value: String): HasFrom = copy(variables = variables + (key to value))
         fun toc(depth: Int? = null): HasFrom = copy(toc = true, tocDepth = depth)
-        fun output(file: String): HasFrom = copy(output = file)
         fun wrap(option: WrapOption): HasFrom = copy(wrap = option)
         fun ascii(enabled: Boolean = true): HasFrom = copy(ascii = enabled)
         fun numberSections(enabled: Boolean = true): HasFrom = copy(numberSections = enabled)
@@ -497,7 +492,6 @@ sealed class PandocCommand {
         val variables: Map<String, String> = emptyMap(),
         val toc: Boolean? = null,
         val tocDepth: Int? = null,
-        val output: String? = null,
         val wrap: WrapOption? = null,
         val ascii: Boolean? = null,
         val numberSections: Boolean? = null,
@@ -576,7 +570,6 @@ sealed class PandocCommand {
             variables = variables,
             toc = toc,
             tocDepth = tocDepth,
-            output = output,
             wrap = wrap,
             ascii = ascii,
             numberSections = numberSections,
@@ -651,7 +644,6 @@ sealed class PandocCommand {
         fun metadata(key: String, value: String): NeedsTo = copy(metadata = metadata + (key to value))
         fun variable(key: String, value: String): NeedsTo = copy(variables = variables + (key to value))
         fun toc(depth: Int? = null): NeedsTo = copy(toc = true, tocDepth = depth)
-        fun output(file: String): NeedsTo = copy(output = file)
         fun wrap(option: WrapOption): NeedsTo = copy(wrap = option)
         fun ascii(enabled: Boolean = true): NeedsTo = copy(ascii = enabled)
         fun numberSections(enabled: Boolean = true): NeedsTo = copy(numberSections = enabled)
@@ -727,7 +719,7 @@ sealed class PandocCommand {
     /**
      * Complete state with all required fields set (input format, input source, output format).
      * 
-     * This state has all terminal operations ([execute], [executeAsync], [executeToFile], [executeToFileAsync]).
+     * This state has all terminal operations ([outputString], [outputStringAsync], [outputFile], [outputFileAsync]).
      */
     @PandocDsl
     data class Complete internal constructor(
@@ -740,7 +732,6 @@ sealed class PandocCommand {
         val variables: Map<String, String> = emptyMap(),
         val toc: Boolean? = null,
         val tocDepth: Int? = null,
-        val output: String? = null,
         val wrap: WrapOption? = null,
         val ascii: Boolean? = null,
         val numberSections: Boolean? = null,
@@ -812,7 +803,6 @@ sealed class PandocCommand {
         // Configuration setters
         fun standalone(enabled: Boolean = true): Complete = copy(standalone = enabled)
         fun template(file: String): Complete = copy(template = file)
-        fun output(file: String): Complete = copy(output = file)
         fun metadata(key: String, value: String): Complete = copy(metadata = metadata + (key to value))
         fun variable(key: String, value: String): Complete = copy(variables = variables + (key to value))
         fun toc(depth: Int? = null): Complete = copy(toc = true, tocDepth = depth)
@@ -885,17 +875,17 @@ sealed class PandocCommand {
         
         // Terminal operations
         
-        fun execute(): String = executeSync()
-        suspend fun executeAsync(): String = withContext(Dispatchers.IO) { executeSync() }
-        fun executeToFile(file: String) = executeToFileSync(file)
-        suspend fun executeToFileAsync(file: String) = withContext(Dispatchers.IO) { executeToFileSync(file) }
+        fun outputString(): String = outputStringSync()
+        suspend fun outputStringAsync(): String = withContext(Dispatchers.IO) { outputStringSync() }
+        fun outputFile(file: String) = outputFileSync(file)
+        suspend fun outputFileAsync(file: String) = withContext(Dispatchers.IO) { outputFileSync(file) }
         
-        private fun executeSync(): String {
+        private fun outputStringSync(): String {
             val command = buildCommandLine()
             return runPandoc(command, inputSource)
         }
         
-        private fun executeToFileSync(file: String) {
+        private fun outputFileSync(file: String) {
             val command = buildCommandLine(file)
             runPandoc(command, inputSource)
         }
@@ -906,7 +896,6 @@ sealed class PandocCommand {
             args.addAll(listOf("-f", from.value))
             args.addAll(listOf("-t", to.value))
             outputFile?.let { args.addAll(listOf("-o", it)) }
-            output?.let { args.addAll(listOf("-o", it)) }
             
             standalone?.let { if (it) args.add("--standalone") }
             template?.let { args.addAll(listOf("--template", it)) }
@@ -1049,35 +1038,42 @@ sealed class PandocCommand {
  * 
  * Example usage:
  * ```kotlin
- * // Simple conversion from file
+ * // Simple conversion from file to String
  * val html = Pandoc.convert()
  *     .from(InputFormat.MARKDOWN)
- *     .input("readme.md")
+ *     .inputFile("readme.md")
  *     .to(OutputFormat.HTML)
  *     .standalone()
- *     .execute()
+ *     .outputString()
  * 
- * // Simple conversion from string
+ * // Simple conversion from string to String
  * val html2 = Pandoc.convert()
  *     .from(InputFormat.MARKDOWN)
  *     .inputString("# Hello")
  *     .to(OutputFormat.HTML)
- *     .execute()
+ *     .outputString()
  * 
- * // Conversion from InputStream
+ * // Conversion from InputStream to String
  * val html3 = Pandoc.convert()
  *     .from(InputFormat.MARKDOWN)
  *     .inputStream(inputStream)
  *     .to(OutputFormat.HTML)
- *     .execute()
+ *     .outputString()
  * 
- * // Async conversion
+ * // Conversion to file
+ * Pandoc.convert()
+ *     .from(InputFormat.MARKDOWN)
+ *     .inputFile("input.md")
+ *     .to(OutputFormat.HTML)
+ *     .outputFile("output.html")
+ * 
+ * // Async conversion to String
  * suspend fun convertAsync() {
  *     val result = Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
  *         .inputFile("input.md")
  *         .to(OutputFormat.HTML)
- *         .executeAsync()
+ *         .outputStringAsync()
  * }
  * ```
  */

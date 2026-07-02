@@ -44,7 +44,7 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputFile(mdFile)
             .to(OutputFormat.HTML)
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("Hello World"))
         assertTrue(html.contains("simple markdown document"))
@@ -61,7 +61,7 @@ class PandocExecutionTest {
             .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .standalone()
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("<!DOCTYPE html>"))
         assertTrue(html.contains("<html"))
@@ -78,7 +78,7 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputString(markdown)
             .to(OutputFormat.HTML)
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("Test Content"))
         assertTrue(html.contains("Paragraph text"))
@@ -94,7 +94,7 @@ class PandocExecutionTest {
             .to(OutputFormat.HTML)
             .standalone()
             .metadata("title", "My Document")
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("<title>"))
         assertTrue(html.contains("My Document"))
@@ -110,7 +110,7 @@ class PandocExecutionTest {
             .to(OutputFormat.HTML)
             .toc(3)
             .standalone()
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("Heading 1"))
         assertTrue(html.contains("Heading 2"))
@@ -125,7 +125,7 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputString(markdown)
             .to(OutputFormat.HTML)
-            .executeAsync()
+            .outputStringAsync()
         
         assertTrue(html.contains("Async Test"))
     }
@@ -139,7 +139,7 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputStream(stream)
             .to(OutputFormat.HTML)
-            .executeAsync()
+            .outputStringAsync()
         
         assertTrue(html.contains("Stream Test"))
     }
@@ -154,7 +154,7 @@ class PandocExecutionTest {
             .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .standalone()
-            .executeToFile(outputFile.absolutePath)
+            .outputFile(outputFile.absolutePath)
         
         assertTrue(outputFile.exists(), "Output file should be created")
         
@@ -177,7 +177,7 @@ class PandocExecutionTest {
             .from(InputFormat.MARKDOWN)
             .inputFiles(file1, file2)
             .to(OutputFormat.HTML)
-            .execute()
+            .outputString()
         
         assertTrue(html.contains("File 1 Content"), "First file content should be present")
         assertTrue(html.contains("File 2 Content"), "Second file content should be present")

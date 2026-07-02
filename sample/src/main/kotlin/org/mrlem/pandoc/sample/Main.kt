@@ -27,6 +27,6 @@ fun main() {
         .to(OutputFormat.HTML)
         .standalone()
         .toc(2)
-        .execute()
+        .outputString()
     println("html: $html")
 }
