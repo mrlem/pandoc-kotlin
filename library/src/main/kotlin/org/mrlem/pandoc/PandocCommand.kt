@@ -1,4 +1,4 @@
-/**
+/*
  * Fluent API for building and executing Pandoc commands.
  * 
  * This module provides a type-safe, compile-time validated API for using pandoc
@@ -7,11 +7,20 @@
  */
 package org.mrlem.pandoc
 
-import org.mrlem.pandoc.enums.*
-import org.mrlem.pandoc.exceptions.PandocExecutionException
-import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.mrlem.pandoc.enums.CaptionPosition
+import org.mrlem.pandoc.enums.EOL
+import org.mrlem.pandoc.enums.EmailObfuscation
+import org.mrlem.pandoc.enums.InputFormat
+import org.mrlem.pandoc.enums.MarkdownHeadingStyle
+import org.mrlem.pandoc.enums.OutputFormat
+import org.mrlem.pandoc.enums.ReferenceLocation
+import org.mrlem.pandoc.enums.TopLevelDivision
+import org.mrlem.pandoc.enums.TrackChanges
+import org.mrlem.pandoc.enums.WrapOption
+import org.mrlem.pandoc.exceptions.PandocExecutionException
+import org.mrlem.pandoc.exceptions.PandocNotFoundException
 import java.io.File
 import java.nio.file.Path
 
@@ -153,7 +162,7 @@ sealed class PandocCommand {
         
         // Input methods
         
-        fun input(vararg files: String): NeedsTo = NeedsTo(
+        fun inputFiles(vararg files: String): NeedsTo = NeedsTo(
             from = from,
             inputSource = InputSource.Files(files.toList()),
             standalone = standalone,
@@ -231,11 +240,11 @@ sealed class PandocCommand {
             log = log
         )
         
-        fun input(file: String): NeedsTo = input(*arrayOf(file))
-        fun input(file: Path): NeedsTo = input(file.toString())
-        fun input(file: File): NeedsTo = input(file.absolutePath)
-        fun input(vararg files: File): NeedsTo = input(*files.map { it.absolutePath }.toTypedArray())
-        fun input(vararg files: Path): NeedsTo = input(*files.map { it.toString() }.toTypedArray())
+        fun inputFile(file: String): NeedsTo = inputFiles(file)
+        fun inputFile(file: Path): NeedsTo = inputFile(file.toString())
+        fun inputFile(file: File): NeedsTo = inputFile(file.absolutePath)
+        fun inputFiles(vararg files: File): NeedsTo = inputFiles(*files.map { it.absolutePath }.toTypedArray())
+        fun inputFiles(vararg files: Path): NeedsTo = inputFiles(*files.map { it.toString() }.toTypedArray())
         
         fun inputString(content: String): NeedsTo = NeedsTo(
             from = from,

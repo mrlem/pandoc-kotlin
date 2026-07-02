@@ -29,7 +29,7 @@ class PandocTest {
     
     @Test
     fun `compile-time safety - NeedsTo state does not have execute`() {
-        val command = Pandoc.convert().from(InputFormat.MARKDOWN).input("test.md")
+        val command = Pandoc.convert().from(InputFormat.MARKDOWN).inputFile("test.md")
         // The following would not compile: command.execute()
     }
     
@@ -43,7 +43,7 @@ class PandocTest {
     fun `Complete state with file input has execute`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input("test.md")
+            .inputFile("test.md")
             .to(OutputFormat.HTML)
         // This compiles - Complete has execute()
     }
@@ -61,7 +61,7 @@ class PandocTest {
     fun `full conversion chain with file input compiles`() {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input("test.md")
+            .inputFile("test.md")
             .to(OutputFormat.HTML)
             .standalone()
             .toc(2)
@@ -85,7 +85,7 @@ class PandocTest {
     fun `async execution methods exist`() = runTest {
         val command = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input("test.md")
+            .inputFile("test.md")
             .to(OutputFormat.HTML)
         // executeAsync() exists on complete states
     }

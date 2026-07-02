@@ -5,7 +5,6 @@
 package org.mrlem.pandoc
 
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -42,7 +41,7 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(mdFile)
+            .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .execute()
         
@@ -58,7 +57,7 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(mdFile)
+            .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .standalone()
             .execute()
@@ -90,7 +89,7 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(mdFile)
+            .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .standalone()
             .metadata("title", "My Document")
@@ -106,7 +105,7 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(mdFile)
+            .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .toc(3)
             .standalone()
@@ -137,7 +136,7 @@ class PandocExecutionTest {
         
         Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(mdFile)
+            .inputFile(mdFile)
             .to(OutputFormat.HTML)
             .standalone()
             .executeToFile(outputFile.absolutePath)
@@ -161,7 +160,7 @@ class PandocExecutionTest {
         
         val html = Pandoc.convert()
             .from(InputFormat.MARKDOWN)
-            .input(file1, file2)
+            .inputFiles(file1, file2)
             .to(OutputFormat.HTML)
             .execute()
         
