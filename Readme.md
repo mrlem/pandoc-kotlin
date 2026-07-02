@@ -15,7 +15,7 @@ A Kotlin library to convert documents between a variety of file formats, using P
 Add to your `build.gradle.kts`:
 
 ```kotlin
-implementation("org.mrlem:pandoc-kt:0.1.0-SNAPSHOT")
+implementation("org.mrlem.pandoc:pandoc-kt:0.1.0")
 ```
 
 ## Quick Start
@@ -137,6 +137,9 @@ Pandoc.convert().from(InputFormat.MARKDOWN).execute()  // Compile error
 // Missing 'from' or 'input'
 Pandoc.convert().to(OutputFormat.HTML).execute()  // Compile error
 
+// Missing input source (files or stdin) after specifying from and to
+Pandoc.convert().from(InputFormat.MARKDOWN).to(OutputFormat.HTML).execute()  // Compile error
+
 // Missing 'to' for stdin
 Pandoc.convert().fromStdin().execute("content")  // Compile error
 ```
@@ -163,7 +166,7 @@ try {
 
 ## Requirements
 
-- Kotlin 2.0.21+
+- Kotlin 2.4.0+
 - Java 21+
 - Pandoc 3.7.x installed on system PATH (for execution)
 
