@@ -1,18 +1,28 @@
 plugins {
     kotlin("jvm")
-    `java-library`
+    signing
     alias(libs.plugins.maven.publish)
+}
+
+signing {
+    useGpgCmd()
 }
 
 mavenPublishing {
     publishToMavenCentral()
+    signAllPublications()
+    coordinates(
+        groupId = "org.mrlem.pandoc",
+        artifactId = "pandoc-kotlin",
+        version = "0.1.0",
+    )
 
-    coordinates("org.mrlem.pandoc", "pandoc-kotlin", "0.1.0")
     pom {
-        name.set("Pandoc Kotlin library")
-        description.set("A Kotlin library for using Pandoc with a fluent, type-safe API")
-        inceptionYear.set("2026")
-        url.set("https://github.com/mrlem/pandoc-kotlin")
+        name = "Pandoc Kotlin library"
+        description = "A Kotlin library for using Pandoc with a fluent, type-safe API"
+        inceptionYear = "2026"
+        url = "https://github.com/mrlem/pandoc-kotlin"
+
         licenses {
             license {
                 name.set("GNU General Public License, version 3.0")

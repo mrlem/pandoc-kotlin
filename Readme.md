@@ -1,5 +1,7 @@
 # 📄 Pandoc Kotlin
 
+[![Maven Central](https://img.shields.io/maven-central/v/org.mrlem.pandoc/pandoc-kotlin)](https://search.maven.org/artifact/org.mrlem.pandoc/pandoc-kotlin)
+
 A Kotlin library to convert documents between a variety of file formats, using Pandoc.
 
 ## Features
@@ -87,7 +89,3 @@ suspend fun convertWithErrorHandling() {
 - Pandoc 3.7.x installed on system PATH (for execution)
 
 *Note: This library has been validated with Pandoc 3.7.0.2*
-
-## TODO
-
-- add inline doc to describe options

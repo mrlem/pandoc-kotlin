@@ -8,11 +8,10 @@ application {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
-    implementation(project(":library"))
+    implementation("org.mrlem.pandoc:pandoc-kotlin:0.1.0")
     implementation(libs.kotlinx.coroutines.core)
 }
