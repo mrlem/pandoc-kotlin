@@ -12,6 +12,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.mrlem.pandoc:pandoc-kotlin:0.1.0")
+    implementation("org.mrlem.pandoc:pandoc-kotlin:0.2.0")
     implementation(libs.kotlinx.coroutines.core)
 }
