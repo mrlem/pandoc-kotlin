@@ -15,8 +15,6 @@ Note: you can also check your setup using:
 echo "test" | gpg --clearsign
 ```
 
-## Publishing a new version
-
 * add your maven central credentials, in `~/.gradle/gradle.properties`:
 ```properties
 mavenCentralUsername=username
@@ -28,11 +26,27 @@ mavenCentralPassword=password
 ```bash
 gpgconf --launch gpg-agent
 ```
-* publish locally (i.e. to `~/.m2/repository`) using:
+
+## Publishing a new version
+
+Considering you want to publish version X.Y.Z:
+
+* modify new version number:
+  - `Readme.md` sample code to use X.Y.Z
+  - `library/build.gradle.kts` version variable to X.Y.Z
+  - `sample/build.gradle.kts` build file to use X.Y.Z
+* commit new version number:
 ```bash
-./gradlew publishToMavenLocal
+git commit -m "chore: bump version to X.Y.Z"
+git push
 ```
-* publish to [Maven Central](https://central.sonatype.com/) using:
+* pre-publish to [Maven Central](https://central.sonatype.com/) using:
 ```bash
 ./gradlew publishToMavenCentral
+```
+* publish in Maven Central, wait for published status
+* add tag:
+```bash
+git tag vX.Y.Z
+git push --tags
 ```
