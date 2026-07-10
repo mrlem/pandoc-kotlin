@@ -27,12 +27,6 @@ import java.io.Writer
 import java.nio.file.Path
 
 /**
- * DSL marker annotation to prevent accidental mixing of different DSL contexts.
- */
-@DslMarker
-annotation class PandocDsl
-
-/**
  * Represents the input source for pandoc conversion.
  */
 sealed class InputSource {
@@ -67,7 +61,6 @@ sealed class PandocCommand {
      * 
      * Use [from] to begin configuration.
      */
-    @PandocDsl
     class Incomplete internal constructor() : PandocCommand() {
         
         /**
@@ -86,7 +79,6 @@ sealed class PandocCommand {
     /**
      * State where input format is set but input source and output format are not yet set.
      */
-    @PandocDsl
     data class HasFrom internal constructor(
         val from: InputFormat,
         val standalone: Boolean? = null,
@@ -483,7 +475,6 @@ sealed class PandocCommand {
     /**
      * State where input format and input source are set but output format is not yet set.
      */
-    @PandocDsl
     data class NeedsTo internal constructor(
         val from: InputFormat,
         val inputSource: InputSource,
@@ -722,7 +713,6 @@ sealed class PandocCommand {
      * 
      * This state has all terminal operations ([outputString], [outputFile], [outputWriter]).
      */
-    @PandocDsl
     data class Complete internal constructor(
         val from: InputFormat,
         val inputSource: InputSource,
