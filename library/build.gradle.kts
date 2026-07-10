@@ -1,12 +1,10 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.SourcesJar
-
 plugins {
     kotlin("jvm")
     signing
     alias(libs.plugins.maven.publish)
+    alias(libs.plugins.dokka)
 }
 
 signing {
@@ -47,10 +45,7 @@ mavenPublishing {
             connection.set("scm:git:git://github.com/mrlem/pandoc-kotlin.git")
             developerConnection.set("scm:git:ssh://git@github.com/mrlem/pandoc-kotlin.git")
         }
-        configureBasedOnAppliedPlugins(
-            javadocJar = JavadocJar.Javadoc(),
-            sourcesJar = SourcesJar.Sources(),
-        )
+        configureBasedOnAppliedPlugins()
     }
 
     repositories {
