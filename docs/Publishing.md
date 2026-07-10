@@ -1,4 +1,4 @@
-# Publishing
+# Release
 
 ## Pre-requisites
 
@@ -27,9 +27,9 @@ mavenCentralPassword=password
 gpgconf --launch gpg-agent
 ```
 
-## Publishing a new version
+## Steps
 
-Considering you want to publish version X.Y.Z:
+Considering you want to release version X.Y.Z:
 
 * modify new version number:
   - `Readme.md` sample code to use X.Y.Z
@@ -37,6 +37,7 @@ Considering you want to publish version X.Y.Z:
   - `sample/build.gradle.kts` build file to use X.Y.Z
 * commit new version number:
 ```bash
+git add -p
 git commit -m "chore: bump version to X.Y.Z"
 git push
 ```
@@ -45,8 +46,9 @@ git push
 ./gradlew publishToMavenCentral
 ```
 * publish in Maven Central, wait for published status
-* add tag:
+* add version tag:
 ```bash
 git tag vX.Y.Z
 git push --tags
 ```
+* create GitHub release from tag
