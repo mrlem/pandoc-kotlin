@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.mrlem.pandoc/pandoc-kotlin)](https://search.maven.org/artifact/org.mrlem.pandoc/pandoc-kotlin)
 
-A Kotlin library to convert documents between a variety of file formats, using Pandoc.
+A Kotlin library to convert documents between a variety of file formats, using [Pandoc](https://pandoc.org/).
 
 ## Features
 
