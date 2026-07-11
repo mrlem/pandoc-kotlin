@@ -35,8 +35,8 @@ suspend fun convertFileToHtml() {
     val html = Pandoc.convert()
         .from(InputFormat.MARKDOWN)
         .inputString("# Hello World")
-        .to(OutputFormat.HTML)
         .standalone()
+        .to(OutputFormat.HTML)
         .outputString()
 }
 ```
@@ -50,12 +50,12 @@ suspend fun convertWithOptions() {
     val html = Pandoc.convert()
         .from(InputFormat.MARKDOWN)
         .inputFile("readme.md")
-        .to(OutputFormat.PDF)
         .standalone()
         .template("custom.html")
         .toc(2)
         .metadata("title", "My Document")
         .metadata("author", "John Doe")
+        .to(OutputFormat.PDF)
         .outputFile("readme.pdf")
 }
 ```
