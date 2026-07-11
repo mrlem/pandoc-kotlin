@@ -2,9 +2,6 @@ package org.mrlem.pandoc.enums
 
 /**
  * Input formats supported by Pandoc.
- *
- * Use these values with [org.mrlem.pandoc.PandocCommand.from] to specify
- * the format of your input document.
  */
 enum class InputFormat(
     val value: String,

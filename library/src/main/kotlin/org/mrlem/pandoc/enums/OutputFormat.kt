@@ -2,9 +2,6 @@ package org.mrlem.pandoc.enums
 
 /**
  * Output formats supported by Pandoc.
- *
- * Use these values with [org.mrlem.pandoc.PandocCommand.to] to specify
- * the desired output format for your document.
  */
 enum class OutputFormat(
     val value: String,
