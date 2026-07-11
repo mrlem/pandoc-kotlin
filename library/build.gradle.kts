@@ -17,7 +17,7 @@ mavenPublishing {
     coordinates(
         groupId = "org.mrlem.pandoc",
         artifactId = "pandoc-kotlin",
-        version = "0.3.0-SNAPSHOT",
+        version = "0.3.0",
     )
 
     pom {
