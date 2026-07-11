@@ -2,7 +2,7 @@ package org.mrlem.pandoc.exceptions
 
 /**
  * Base exception for all Pandoc-related errors.
- * 
+ *
  * @param message The error message
  * @param exitCode The exit code from the pandoc process (null if not executed)
  * @param command The command line that was executed
@@ -16,18 +16,21 @@ abstract class PandocException(
     val command: List<String>? = null,
     val stdout: String? = null,
     val stderr: String? = null,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(message, cause) {
-    
-    override fun toString(): String {
-        val builder = StringBuilder()
-        builder.appendLine("PandocException: $message")
-        
-        exitCode?.let { builder.appendLine("Exit code: $it") }
-        command?.let { builder.appendLine("Command: ${it.joinToString(" ")}") }
-        stdout?.takeIf { it.isNotBlank() }?.let { builder.appendLine("Stdout:\n$it") }
-        stderr?.takeIf { it.isNotBlank() }?.let { builder.appendLine("Stderr:\n$it") }
-        
-        return builder.toString()
-    }
+    override fun toString(): String = StringBuilder()
+        .appendLine("PandocException: $message")
+        .apply {
+            exitCode
+                ?.let { appendLine("Exit code: $it") }
+            command
+                ?.let { appendLine("Command: ${it.joinToString(" ")}") }
+            stdout
+                ?.takeIf { it.isNotBlank() }
+                ?.let { appendLine("Stdout:\n$it") }
+            stderr
+                ?.takeIf { it.isNotBlank() }
+                ?.let { appendLine("Stderr:\n$it") }
+        }
+        .toString()
 }

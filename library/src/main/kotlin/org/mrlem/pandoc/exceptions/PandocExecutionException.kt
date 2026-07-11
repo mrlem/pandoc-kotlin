@@ -9,5 +9,5 @@ class PandocExecutionException(
     command: List<String>,
     stdout: String? = null,
     stderr: String? = null,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : PandocException(message, exitCode, command, stdout, stderr, cause)

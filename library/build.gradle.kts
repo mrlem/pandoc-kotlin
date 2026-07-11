@@ -65,7 +65,11 @@ dependencies {
 }
 
 kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
+    jvmToolchain(
+        libs.versions.java
+            .get()
+            .toInt(),
+    )
     compilerOptions {
         freeCompilerArgs.addAll(listOf("-Xconsistent-data-class-copy-visibility"))
     }
@@ -77,6 +81,12 @@ tasks.test {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get().toInt()))
+        languageVersion.set(
+            JavaLanguageVersion.of(
+                libs.versions.java
+                    .get()
+                    .toInt(),
+            ),
+        )
     }
 }

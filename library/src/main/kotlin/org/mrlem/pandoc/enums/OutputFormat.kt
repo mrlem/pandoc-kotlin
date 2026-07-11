@@ -6,7 +6,9 @@ package org.mrlem.pandoc.enums
  * Use these values with [org.mrlem.pandoc.PandocCommand.to] to specify
  * the desired output format for your document.
  */
-enum class OutputFormat(val value: String) {
+enum class OutputFormat(
+    val value: String,
+) {
     // Markup formats
     ANSII("ansi"),
     ASCIIDOC("asciidoc"),

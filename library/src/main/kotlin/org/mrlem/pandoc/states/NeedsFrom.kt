@@ -7,13 +7,12 @@ import org.mrlem.pandoc.enums.InputFormat
  *
  * Use [from] to begin configuration.
  */
-class Incomplete internal constructor() : CommandState {
-
+class NeedsFrom internal constructor() : CommandState {
     /**
      * Set the input format.
      *
      * @param format The input format (e.g., MARKDOWN, HTML, DOCX)
-     * @return A [HasFrom] state ready to set input source
+     * @return A [NeedsInput] state ready to set input source
      */
-    fun from(format: InputFormat): HasFrom = HasFrom(format)
+    fun from(format: InputFormat): NeedsInput = NeedsInput(format)
 }

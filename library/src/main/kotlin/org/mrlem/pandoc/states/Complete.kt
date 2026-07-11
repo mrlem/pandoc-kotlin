@@ -23,319 +23,102 @@ import java.io.Writer
  * This state has all terminal operations ([outputString], [outputFile], [outputWriter]).
  */
 data class Complete internal constructor(
-    val from: InputFormat,
-    val inputSource: InputSource,
-    val to: OutputFormat,
-    val standalone: Boolean? = null,
-    val template: String? = null,
-    val metadata: Map<String, String> = emptyMap(),
-    val variables: Map<String, String> = emptyMap(),
-    val toc: Boolean? = null,
-    val tocDepth: Int? = null,
-    val wrapMode: WrapMode? = null,
-    val ascii: Boolean? = null,
-    val numberSections: Boolean? = null,
-    val numberOffset: List<Int>? = null,
-    val topLevelDivision: TopLevelDivision? = null,
-    val extractMedia: String? = null,
-    val resourcePath: List<String>? = null,
-    val includeInHeader: List<String>? = null,
-    val includeBeforeBody: List<String>? = null,
-    val includeAfterBody: List<String>? = null,
-    val highlightStyle: String? = null,
-    val syntaxDefinition: String? = null,
-    val dpi: Int? = null,
-    val eol: EOL? = null,
-    val columns: Int? = null,
-    val preserveTabs: Boolean? = null,
-    val tabStop: Int? = null,
-    val pdfEngine: String? = null,
-    val pdfEngineOpt: List<String>? = null,
-    val selfContained: Boolean? = null,
-    val embedResources: Boolean? = null,
-    val linkImages: Boolean? = null,
-    val requestHeaders: Map<String, String>? = null,
-    val noCheckCertificate: Boolean? = null,
-    val abbreviations: String? = null,
-    val indentedCodeClasses: String? = null,
-    val defaultImageExtension: String? = null,
-    val filters: List<String>? = null,
-    val luaFilters: List<String>? = null,
-    val shiftHeadingLevelBy: Int? = null,
-    val baseHeaderLevel: Int? = null,
-    val trackChanges: TrackChanges? = null,
-    val stripComments: Boolean? = null,
-    val referenceLinks: Boolean? = null,
-    val referenceLocation: ReferenceLocation? = null,
-    val figureCaptionPosition: CaptionPosition? = null,
-    val tableCaptionPosition: CaptionPosition? = null,
-    val markdownHeadings: MarkdownHeadingStyle? = null,
-    val listTables: Boolean? = null,
-    val listings: Boolean? = null,
-    val incremental: Boolean? = null,
-    val slideLevel: Int? = null,
-    val sectionDivs: Boolean? = null,
-    val htmlQTags: Boolean? = null,
-    val emailObfuscation: EmailObfuscation? = null,
-    val idPrefix: String? = null,
-    val titlePrefix: String? = null,
-    val css: String? = null,
-    val citeproc: Boolean? = null,
-    val bibliography: String? = null,
-    val csl: String? = null,
-    val citationAbbreviations: String? = null,
-    val natbib: Boolean? = null,
-    val biblatex: Boolean? = null,
-    val mathml: Boolean? = null,
-    val webtex: String? = null,
-    val mathjax: String? = null,
-    val katex: String? = null,
-    val gladtex: Boolean? = null,
-    val trace: Boolean? = null,
-    val dumpArgs: Boolean? = null,
-    val ignoreArgs: Boolean? = null,
-    val verbose: Boolean? = null,
-    val quiet: Boolean? = null,
-    val failIfWarnings: Boolean? = null,
-    val log: String? = null
+    private val from: InputFormat,
+    private val inputSource: InputSource,
+    private val to: OutputFormat,
+    private val standalone: Boolean? = null,
+    private val template: String? = null,
+    private val metadata: Map<String, String> = emptyMap(),
+    private val variables: Map<String, String> = emptyMap(),
+    private val toc: Boolean? = null,
+    private val tocDepth: Int? = null,
+    private val wrapMode: WrapMode? = null,
+    private val ascii: Boolean? = null,
+    private val numberSections: Boolean? = null,
+    private val numberOffset: List<Int>? = null,
+    private val topLevelDivision: TopLevelDivision? = null,
+    private val extractMedia: String? = null,
+    private val resourcePath: List<String>? = null,
+    private val includeInHeader: List<String>? = null,
+    private val includeBeforeBody: List<String>? = null,
+    private val includeAfterBody: List<String>? = null,
+    private val highlightStyle: String? = null,
+    private val syntaxDefinition: String? = null,
+    private val dpi: Int? = null,
+    private val eol: EOL? = null,
+    private val columns: Int? = null,
+    private val preserveTabs: Boolean? = null,
+    private val tabStop: Int? = null,
+    private val pdfEngine: String? = null,
+    private val pdfEngineOpt: List<String>? = null,
+    private val selfContained: Boolean? = null,
+    private val embedResources: Boolean? = null,
+    private val linkImages: Boolean? = null,
+    private val requestHeaders: Map<String, String>? = null,
+    private val noCheckCertificate: Boolean? = null,
+    private val abbreviations: String? = null,
+    private val indentedCodeClasses: String? = null,
+    private val defaultImageExtension: String? = null,
+    private val filters: List<String>? = null,
+    private val luaFilters: List<String>? = null,
+    private val shiftHeadingLevelBy: Int? = null,
+    private val baseHeaderLevel: Int? = null,
+    private val trackChanges: TrackChanges? = null,
+    private val stripComments: Boolean? = null,
+    private val referenceLinks: Boolean? = null,
+    private val referenceLocation: ReferenceLocation? = null,
+    private val figureCaptionPosition: CaptionPosition? = null,
+    private val tableCaptionPosition: CaptionPosition? = null,
+    private val markdownHeadings: MarkdownHeadingStyle? = null,
+    private val listTables: Boolean? = null,
+    private val listings: Boolean? = null,
+    private val incremental: Boolean? = null,
+    private val slideLevel: Int? = null,
+    private val sectionDivs: Boolean? = null,
+    private val htmlQTags: Boolean? = null,
+    private val emailObfuscation: EmailObfuscation? = null,
+    private val idPrefix: String? = null,
+    private val titlePrefix: String? = null,
+    private val css: String? = null,
+    private val citeproc: Boolean? = null,
+    private val bibliography: String? = null,
+    private val csl: String? = null,
+    private val citationAbbreviations: String? = null,
+    private val natbib: Boolean? = null,
+    private val biblatex: Boolean? = null,
+    private val mathml: Boolean? = null,
+    private val webtex: String? = null,
+    private val mathjax: String? = null,
+    private val katex: String? = null,
+    private val gladtex: Boolean? = null,
+    private val trace: Boolean? = null,
+    private val dumpArgs: Boolean? = null,
+    private val ignoreArgs: Boolean? = null,
+    private val verbose: Boolean? = null,
+    private val quiet: Boolean? = null,
+    private val failIfWarnings: Boolean? = null,
+    private val log: String? = null,
 ) : CommandState {
-
-    // Configuration setters
-    // See HasFrom class for detailed documentation of each method
-
-    /** Produce output with an appropriate header and footer. See [HasFrom.standalone] */
-    fun standalone(enabled: Boolean = true): Complete = copy(standalone = enabled)
-
-    /** Use the specified file as a custom template. See [HasFrom.template] */
-    fun template(file: String): Complete = copy(template = file)
-
-    /** Set the metadata field KEY to the value VAL. See [HasFrom.metadata] */
-    fun metadata(key: String, value: String): Complete = copy(metadata = metadata + (key to value))
-
-    /** Set the template variable KEY to the string value VAL. See [HasFrom.variable] */
-    fun variable(key: String, value: String): Complete = copy(variables = variables + (key to value))
-
-    /** Include an automatically generated table of contents. See [HasFrom.toc] */
-    fun toc(depth: Int? = null): Complete = copy(toc = true, tocDepth = depth)
-
-    /** Determine how text is wrapped in the output. See [HasFrom.wrap] */
-    fun wrap(option: WrapMode): Complete = copy(wrapMode = option)
-
-    /** Use only ASCII characters in output. See [HasFrom.ascii] */
-    fun ascii(enabled: Boolean = true): Complete = copy(ascii = enabled)
-
-    /** Number section headings in output. See [HasFrom.numberSections] */
-    fun numberSections(enabled: Boolean = true): Complete = copy(numberSections = enabled)
-
-    /** Offsets for section heading numbers. See [HasFrom.numberOffset] */
-    fun numberOffset(vararg offsets: Int): Complete = copy(numberOffset = offsets.toList())
-
-    /** Treat top-level headings as the given division type. See [HasFrom.topLevelDivision] */
-    fun topLevelDivision(division: TopLevelDivision): Complete = copy(topLevelDivision = division)
-
-    /** Extract images and other media. See [HasFrom.extractMedia] */
-    fun extractMedia(path: String): Complete = copy(extractMedia = path)
-
-    /** List of paths to search for images and other resources. See [HasFrom.resourcePath] */
-    fun resourcePath(vararg paths: String): Complete = copy(resourcePath = paths.toList())
-
-    /** Include contents at the end of the header. See [HasFrom.includeInHeader] */
-    fun includeInHeader(file: String): Complete = copy(includeInHeader = (includeInHeader ?: emptyList()) + file)
-
-    /** Include contents at the beginning of the document body. See [HasFrom.includeBeforeBody] */
-    fun includeBeforeBody(file: String): Complete = copy(includeBeforeBody = (includeBeforeBody ?: emptyList()) + file)
-
-    /** Include contents at the end of the document body. See [HasFrom.includeAfterBody] */
-    fun includeAfterBody(file: String): Complete = copy(includeAfterBody = (includeAfterBody ?: emptyList()) + file)
-
-    /** Specifies the styling for highlighted source code. See [HasFrom.highlightStyle] */
-    fun highlightStyle(style: String): Complete = copy(highlightStyle = style)
-
-    /** Instructs pandoc to load a KDE XML syntax definition file. See [HasFrom.syntaxDefinition] */
-    fun syntaxDefinition(file: String): Complete = copy(syntaxDefinition = file)
-
-    /** Specify the default dpi value. See [HasFrom.dpi] */
-    fun dpi(value: Int): Complete = copy(dpi = value)
-
-    /** Manually specify line endings. See [HasFrom.eol] */
-    fun eol(option: EOL): Complete = copy(eol = option)
-
-    /** Specify length of lines in characters. See [HasFrom.columns] */
-    fun columns(value: Int): Complete = copy(columns = value)
-
-    /** Preserve tabs instead of converting to spaces. See [HasFrom.preserveTabs] */
-    fun preserveTabs(enabled: Boolean = true): Complete = copy(preserveTabs = enabled)
-
-    /** Specify the number of spaces per tab. See [HasFrom.tabStop] */
-    fun tabStop(value: Int): Complete = copy(tabStop = value)
-
-    /** Use the specified engine when producing PDF output. See [HasFrom.pdfEngine] */
-    fun pdfEngine(engine: String): Complete = copy(pdfEngine = engine)
-
-    /** Use as command-line argument to the PDF engine. See [HasFrom.pdfEngineOpt] */
-    fun pdfEngineOpt(option: String): Complete = copy(pdfEngineOpt = (pdfEngineOpt ?: emptyList()) + option)
-
-    /** Deprecated; use [embedResources] instead. See [HasFrom.selfContained] */
-    fun selfContained(enabled: Boolean = true): Complete = copy(selfContained = enabled)
-
-    /** Produce standalone HTML with no external dependencies. See [HasFrom.embedResources] */
-    fun embedResources(enabled: Boolean = true): Complete = copy(embedResources = enabled)
-
-    /** Include links to images instead of embedding. See [HasFrom.linkImages] */
-    fun linkImages(enabled: Boolean = true): Complete = copy(linkImages = enabled)
-
-    /** Set the request header NAME to VALUE. See [HasFrom.requestHeader] */
-    fun requestHeader(name: String, value: String): Complete =
-        copy(requestHeaders = (requestHeaders ?: emptyMap()) + (name to value))
-
-    /** Disable certificate verification. See [HasFrom.noCheckCertificate] */
-    fun noCheckCertificate(enabled: Boolean = true): Complete = copy(noCheckCertificate = enabled)
-
-    /** Specifies a custom abbreviations file. See [HasFrom.abbreviations] */
-    fun abbreviations(file: String): Complete = copy(abbreviations = file)
-
-    /** Specify classes for indented code blocks. See [HasFrom.indentedCodeClasses] */
-    fun indentedCodeClasses(classes: String): Complete = copy(indentedCodeClasses = classes)
-
-    /** Specify default extension for images. See [HasFrom.defaultImageExtension] */
-    fun defaultImageExtension(extension: String): Complete = copy(defaultImageExtension = extension)
-
-    /** Specify executable as a filter. See [HasFrom.filter] */
-    fun filter(program: String): Complete = copy(filters = (filters ?: emptyList()) + program)
-
-    /** Transform document using Lua filtering. See [HasFrom.luaFilter] */
-    fun luaFilter(script: String): Complete = copy(luaFilters = (luaFilters ?: emptyList()) + script)
-
-    /** Shift heading levels. See [HasFrom.shiftHeadingLevelBy] */
-    fun shiftHeadingLevelBy(value: Int): Complete = copy(shiftHeadingLevelBy = value)
-
-    /** Deprecated. Use [shiftHeadingLevelBy] instead. See [HasFrom.baseHeaderLevel] */
-    fun baseHeaderLevel(value: Int): Complete = copy(baseHeaderLevel = value)
-
-    /** Track Changes mode for MS Word. See [HasFrom.trackChanges] */
-    fun trackChanges(mode: TrackChanges): Complete = copy(trackChanges = mode)
-
-    /** Strip HTML comments. See [HasFrom.stripComments] */
-    fun stripComments(enabled: Boolean = true): Complete = copy(stripComments = enabled)
-
-    /** Use reference-style links. See [HasFrom.referenceLinks] */
-    fun referenceLinks(enabled: Boolean = true): Complete = copy(referenceLinks = enabled)
-
-    /** Reference location for footnotes. See [HasFrom.referenceLocation] */
-    fun referenceLocation(location: ReferenceLocation): Complete = copy(referenceLocation = location)
-
-    /** Figure caption position. See [HasFrom.figureCaptionPosition] */
-    fun figureCaptionPosition(position: CaptionPosition): Complete = copy(figureCaptionPosition = position)
-
-    /** Table caption position. See [HasFrom.tableCaptionPosition] */
-    fun tableCaptionPosition(position: CaptionPosition): Complete = copy(tableCaptionPosition = position)
-
-    /** Markdown heading style. See [HasFrom.markdownHeadings] */
-    fun markdownHeadings(style: MarkdownHeadingStyle): Complete = copy(markdownHeadings = style)
-
-    /** Render tables as list tables in RST. See [HasFrom.listTables] */
-    fun listTables(enabled: Boolean = true): Complete = copy(listTables = enabled)
-
-    /** Use listings package for LaTeX. See [HasFrom.listings] */
-    fun listings(enabled: Boolean = true): Complete = copy(listings = enabled)
-
-    /** Make list items display incrementally. See [HasFrom.incremental] */
-    fun incremental(enabled: Boolean = true): Complete = copy(incremental = enabled)
-
-    /** Heading level that creates slides. See [HasFrom.slideLevel] */
-    fun slideLevel(value: Int): Complete = copy(slideLevel = value)
-
-    /** Wrap sections in section/div tags. See [HasFrom.sectionDivs] */
-    fun sectionDivs(enabled: Boolean = true): Complete = copy(sectionDivs = enabled)
-
-    /** Use q tags for quotes in HTML. See [HasFrom.htmlQTags] */
-    fun htmlQTags(enabled: Boolean = true): Complete = copy(htmlQTags = enabled)
-
-    /** Email obfuscation method. See [HasFrom.emailObfuscation] */
-    fun emailObfuscation(mode: EmailObfuscation): Complete = copy(emailObfuscation = mode)
-
-    /** Prefix for identifiers and internal links. See [HasFrom.idPrefix] */
-    fun idPrefix(prefix: String): Complete = copy(idPrefix = prefix)
-
-    /** Prefix for the HTML title. See [HasFrom.titlePrefix] */
-    fun titlePrefix(prefix: String): Complete = copy(titlePrefix = prefix)
-
-    /** Link to a CSS style sheet. See [HasFrom.css] */
-    fun css(url: String): Complete = copy(css = url)
-
-    /** Process citations. See [HasFrom.citeproc] */
-    fun citeproc(enabled: Boolean = true): Complete = copy(citeproc = enabled)
-
-    /** Set bibliography file. See [HasFrom.bibliography] */
-    fun bibliography(file: String): Complete = copy(bibliography = file)
-
-    /** Set CSL file. See [HasFrom.csl] */
-    fun csl(file: String): Complete = copy(csl = file)
-
-    /** Set citation abbreviations file. See [HasFrom.citationAbbreviations] */
-    fun citationAbbreviations(file: String): Complete = copy(citationAbbreviations = file)
-
-    /** Use natbib for LaTeX citations. See [HasFrom.natbib] */
-    fun natbib(enabled: Boolean = true): Complete = copy(natbib = enabled)
-
-    /** Use biblatex for LaTeX citations. See [HasFrom.biblatex] */
-    fun biblatex(enabled: Boolean = true): Complete = copy(biblatex = enabled)
-
-    /** Convert TeX math to MathML. See [HasFrom.mathml] */
-    fun mathml(enabled: Boolean = true): Complete = copy(mathml = enabled)
-
-    /** Convert TeX formulas to img tags. See [HasFrom.webtex] */
-    fun webtex(url: String? = null): Complete = copy(webtex = url)
-
-    /** Use MathJax for TeX math. See [HasFrom.mathjax] */
-    fun mathjax(url: String? = null): Complete = copy(mathjax = url)
-
-    /** Use KaTeX for TeX math. See [HasFrom.katex] */
-    fun katex(url: String? = null): Complete = copy(katex = url)
-
-    /** Enclose TeX math in eq tags. See [HasFrom.gladtex] */
-    fun gladtex(enabled: Boolean = true): Complete = copy(gladtex = enabled)
-
-    /** Print diagnostic output tracing parser progress. See [HasFrom.trace] */
-    fun trace(enabled: Boolean = true): Complete = copy(trace = enabled)
-
-    /** Print command-line arguments info. See [HasFrom.dumpArgs] */
-    fun dumpArgs(enabled: Boolean = true): Complete = copy(dumpArgs = enabled)
-
-    /** Ignore command-line arguments. See [HasFrom.ignoreArgs] */
-    fun ignoreArgs(enabled: Boolean = true): Complete = copy(ignoreArgs = enabled)
-
-    /** Give verbose debugging output. See [HasFrom.verbose] */
-    fun verbose(enabled: Boolean = true): Complete = copy(verbose = enabled)
-
-    /** Suppress warning messages. See [HasFrom.quiet] */
-    fun quiet(enabled: Boolean = true): Complete = copy(quiet = enabled)
-
-    /** Exit with error status on warnings. See [HasFrom.failIfWarnings] */
-    fun failIfWarnings(enabled: Boolean = true): Complete = copy(failIfWarnings = enabled)
-
-    /** Write log messages in JSON format to FILE. See [HasFrom.log] */
-    fun log(file: String): Complete = copy(log = file)
-
-    // Terminal operations
-
-    suspend fun outputString(): String = withContext(Dispatchers.IO) {
-        val command = buildCommandLine()
-        runPandoc(command, inputSource)
-    }
-
-    suspend fun outputFile(file: String) = withContext(Dispatchers.IO) {
-        val command = buildCommandLine(file)
-        runPandoc(command, inputSource)
-    }
-
-    suspend fun outputWriter(writer: Writer) = withContext(Dispatchers.IO) {
-        val command = buildCommandLine()
-        runPandoc(command, inputSource, writer)
-    }
+    suspend fun outputString(): String =
+        withContext(Dispatchers.IO) {
+            val command = buildCommandLine()
+            runPandoc(command, inputSource)
+        }
+
+    suspend fun outputFile(file: String) =
+        withContext(Dispatchers.IO) {
+            val command = buildCommandLine(file)
+            runPandoc(command, inputSource)
+        }
+
+    suspend fun outputWriter(writer: Writer) =
+        withContext(Dispatchers.IO) {
+            val command = buildCommandLine()
+            runPandoc(command, inputSource, writer)
+        }
 
     private fun buildCommandLine(outputFile: String? = null): List<String> {
-        val args = mutableListOf<String>("pandoc")
+        val args = mutableListOf("pandoc")
 
         args.addAll(listOf("-f", from.value))
         args.addAll(listOf("-t", to.value))
@@ -359,7 +142,7 @@ data class Complete internal constructor(
         numberOffset?.let { args.addAll(listOf("--number-offset", it.joinToString(","))) }
         topLevelDivision?.let { args.addAll(listOf("--top-level-division", it.value)) }
         extractMedia?.let { args.addAll(listOf("--extract-media", it)) }
-        resourcePath?.let { args.addAll(it.flatMap { listOf("--resource-path", it) }) }
+        resourcePath?.let { args.addAll(it.flatMap { arg -> listOf("--resource-path", arg) }) }
         includeInHeader?.let { it.forEach { h -> args.addAll(listOf("--include-in-header", h)) } }
         includeBeforeBody?.let { it.forEach { h -> args.addAll(listOf("--include-before-body", h)) } }
         includeAfterBody?.let { it.forEach { h -> args.addAll(listOf("--include-after-body", h)) } }
@@ -429,32 +212,45 @@ data class Complete internal constructor(
         return args
     }
 
-    private fun runPandoc(command: List<String>, inputSource: InputSource): String {
-        try {
-            val process = ProcessBuilder(command)
-                .redirectErrorStream(false)
-                .start()
+    private fun createPandocProcess(
+        command: List<String>,
+        inputSource: InputSource,
+    ): Process {
+        val process = ProcessBuilder(command)
+            .redirectErrorStream(false)
+            .start()
 
-            when (inputSource) {
-                is InputSource.StringInput -> {
-                    process.outputStream.bufferedWriter().use { writer ->
-                        writer.write(inputSource.content)
-                        writer.flush()
-                    }
-                }
-
-                is InputSource.ReaderInput -> {
-                    process.outputStream.bufferedWriter().use { writer ->
-                        inputSource.reader.use { reader ->
-                            reader.copyTo(writer)
-                        }
-                    }
-                }
-
-                is InputSource.Files -> {
-                    // Files are passed as arguments, no stdin needed
+        // Write input to stdin
+        when (inputSource) {
+            is InputSource.StringInput -> {
+                process.outputStream.bufferedWriter().use { w ->
+                    w.write(inputSource.content)
+                    w.flush()
                 }
             }
+
+            is InputSource.ReaderInput -> {
+                process.outputStream.bufferedWriter().use { w ->
+                    inputSource.reader.use { reader ->
+                        reader.copyTo(w)
+                    }
+                }
+            }
+
+            is InputSource.Files -> {
+                // Files are passed as arguments, no stdin needed
+            }
+        }
+
+        return process
+    }
+
+    private fun runPandoc(
+        command: List<String>,
+        inputSource: InputSource,
+    ): String {
+        try {
+            val process = createPandocProcess(command, inputSource)
 
             val stdout = process.inputStream.bufferedReader().readText()
             val stderr = process.errorStream.bufferedReader().readText()
@@ -466,7 +262,7 @@ data class Complete internal constructor(
                     exitCode = exitCode,
                     command = command,
                     stdout = stdout,
-                    stderr = stderr
+                    stderr = stderr,
                 )
             }
 
@@ -477,33 +273,13 @@ data class Complete internal constructor(
         }
     }
 
-    private fun runPandoc(command: List<String>, inputSource: InputSource, writer: Writer) {
+    private fun runPandoc(
+        command: List<String>,
+        inputSource: InputSource,
+        writer: Writer,
+    ) {
         try {
-            val process = ProcessBuilder(command)
-                .redirectErrorStream(false)
-                .start()
-
-            // Write input to stdin
-            when (inputSource) {
-                is InputSource.StringInput -> {
-                    process.outputStream.bufferedWriter().use { w ->
-                        w.write(inputSource.content)
-                        w.flush()
-                    }
-                }
-
-                is InputSource.ReaderInput -> {
-                    process.outputStream.bufferedWriter().use { w ->
-                        inputSource.reader.use { reader ->
-                            reader.copyTo(w)
-                        }
-                    }
-                }
-
-                is InputSource.Files -> {
-                    // Files are passed as arguments, no stdin needed
-                }
-            }
+            val process = createPandocProcess(command, inputSource)
 
             // Read stdout and write to the provided Writer
             process.inputStream.bufferedReader().use { reader ->
@@ -519,7 +295,7 @@ data class Complete internal constructor(
                     exitCode = exitCode,
                     command = command,
                     stdout = "",
-                    stderr = stderr
+                    stderr = stderr,
                 )
             }
         } catch (e: Exception) {

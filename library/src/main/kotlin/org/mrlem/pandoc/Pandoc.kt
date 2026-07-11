@@ -7,7 +7,7 @@
  */
 package org.mrlem.pandoc
 
-import org.mrlem.pandoc.states.Incomplete
+import org.mrlem.pandoc.states.NeedsFrom
 
 /**
  * Main entry point for the Pandoc fluent API.
@@ -19,8 +19,8 @@ import org.mrlem.pandoc.states.Incomplete
  *     val html: String = Pandoc.convert()
  *         .from(InputFormat.MARKDOWN)
  *         .inputFile("readme.md")
- *         .to(OutputFormat.HTML)
  *         .standalone()
+ *         .to(OutputFormat.HTML)
  *         .outputString()
  *
  *     // Simple conversion from string to String
@@ -55,11 +55,10 @@ import org.mrlem.pandoc.states.Incomplete
  * ```
  */
 object Pandoc {
-
     /**
      * Start building a pandoc conversion command.
      *
-     * @return An [Incomplete] state ready for configuration
+     * @return An [NeedsFrom] state ready for configuration
      */
-    fun convert(): Incomplete = Incomplete()
+    fun convert(): NeedsFrom = NeedsFrom()
 }

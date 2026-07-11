@@ -5,5 +5,5 @@ package org.mrlem.pandoc.exceptions
  */
 class PandocNotFoundException(
     message: String = "pandoc executable not found on PATH. Please install pandoc or specify its location.",
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : PandocException(message, cause = cause)

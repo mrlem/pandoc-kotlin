@@ -6,7 +6,9 @@ package org.mrlem.pandoc.enums
  * Use these values with [org.mrlem.pandoc.PandocCommand.from] to specify
  * the format of your input document.
  */
-enum class InputFormat(val value: String) {
+enum class InputFormat(
+    val value: String,
+) {
     // Markup formats
     BIBLATEX("biblatex"),
     BIBTEX("bibtex"),
