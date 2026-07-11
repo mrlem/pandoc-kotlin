@@ -1,6 +1,3 @@
-/**
- * Exception classes for Pandoc execution errors.
- */
 package org.mrlem.pandoc.exceptions
 
 /**
@@ -13,7 +10,7 @@ package org.mrlem.pandoc.exceptions
  * @param stderr The standard error from the process
  * @param cause The underlying cause of the error
  */
-open class PandocException(
+abstract class PandocException(
     message: String,
     val exitCode: Int? = null,
     val command: List<String>? = null,
@@ -34,50 +31,3 @@ open class PandocException(
         return builder.toString()
     }
 }
-
-/**
- * Exception thrown when pandoc binary is not found on the system PATH.
- */
-class PandocNotFoundException(
-    message: String = "pandoc executable not found on PATH. Please install pandoc or specify its location.",
-    cause: Throwable? = null
-) : PandocException(message, cause = cause)
-
-/**
- * Exception thrown when required configuration is missing.
- */
-class PandocConfigurationException(
-    message: String,
-    cause: Throwable? = null
-) : PandocException(message, cause = cause)
-
-/**
- * Exception thrown when pandoc execution fails.
- */
-class PandocExecutionException(
-    message: String,
-    exitCode: Int,
-    command: List<String>,
-    stdout: String? = null,
-    stderr: String? = null,
-    cause: Throwable? = null
-) : PandocException(message, exitCode, command, stdout, stderr, cause)
-
-/**
- * Exception thrown when file operations fail.
- */
-class PandocFileException(
-    message: String,
-    val filePath: String? = null,
-    cause: Throwable? = null
-) : PandocException(message, cause = cause)
-
-/**
- * Exception thrown when format conversion is not supported.
- */
-class PandocFormatException(
-    message: String,
-    val inputFormat: String? = null,
-    val outputFormat: String? = null,
-    cause: Throwable? = null
-) : PandocException(message, cause = cause)
